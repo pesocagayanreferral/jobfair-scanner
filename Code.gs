@@ -126,25 +126,29 @@ function doGet(e) {
   try {
     if (e.parameter.action === 'checkin' && e.parameter.id) {
       result = checkInAttendee(e.parameter.id);
-    } else if (e.parameter.action === 'hots' && e.parameter.id) {
-      result = registerHOTS(e.parameter.id);
+    } else if (e.parameter.action === 'hots_info' && e.parameter.id) {
+      result = getHotsInfo(e.parameter.id);
+    } else if (e.parameter.action === 'hots' && e.parameter.id && e.parameter.company && e.parameter.position) {
+      result = registerHOTS(e.parameter.id, e.parameter.company, e.parameter.position);
     } else if (e.parameter.action === 'stats') {
       result = getStats();
     } else if (e.parameter.action === 'list') {
       result = getCheckedInList();
+    } else if (e.parameter.action === 'vacancies') {
+      result = getVacancyList();
+    } else if (e.parameter.action === 'all') {
+      result = getAllRegistrants();
     } else {
       result = { status: 'ready', message: EVENT_NAME + ' API is running' };
     }
   } catch (err) {
     result = { status: 'error', message: err.message };
   }
-
   if (e.parameter.callback) {
     return ContentService.createTextOutput(e.parameter.callback + '(' + JSON.stringify(result) + ')')
       .setMimeType(ContentService.MimeType.JAVASCRIPT);
   }
-  return ContentService.createTextOutput(JSON.stringify(result))
-    .setMimeType(ContentService.MimeType.JSON);
+  return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
 }
 
 function checkInAttendee(scannedId) {
@@ -223,17 +227,17 @@ function generateQRCodeBlob(uniqueId) {
   throw lastError;
 }
 
-function registerHOTS(scannedId) {
+function registerHOTS(scannedId, company, position) {
   const lock = LockService.getScriptLock();
   lock.waitLock(15000);
   try {
-    if (!scannedId) return { status: 'invalid' };
+    if (!scannedId || !company || !position) return { status: 'invalid' };
     const sheet = getResponseSheet();
     const headers = getHeaderRow(sheet);
     const idCol = colIndex(headers, ID_HEADER);
-    const lastCol  = colIndex(headers, LAST_NAME_HEADER);
+    const lastCol = colIndex(headers, LAST_NAME_HEADER);
     const firstCol = colIndex(headers, FIRST_NAME_HEADER);
-    const midCol   = colIndex(headers, MIDDLE_NAME_HEADER);
+    const midCol = colIndex(headers, MIDDLE_NAME_HEADER);
     const statusCol = colIndex(headers, STATUS_HEADER);
     const resultCol = colIndex(headers, INTERVIEW_RESULT_HEADER);
 
@@ -244,19 +248,23 @@ function registerHOTS(scannedId) {
     const row = match.getRow();
     const fullName = [sheet.getRange(row, firstCol).getValue(), sheet.getRange(row, midCol).getValue(), sheet.getRange(row, lastCol).getValue()].filter(String).join(' ');
     const currentStatus = sheet.getRange(row, statusCol).getValue();
+    if (currentStatus !== 'Checked In') return { status: 'not_checked_in', name: fullName };
 
-    // NEW: block HOTS registration unless the person has already been checked in
-    if (currentStatus !== 'Checked In') {
-      return { status: 'not_checked_in', name: fullName };
+    const now = new Date();
+    const hotsSheet = getHotsSheet();
+    hotsSheet.appendRow([now, scannedId, fullName, company, position]);
+
+    const hotsLastRow = hotsSheet.getLastRow();
+    let countForThisId = 0;
+    if (hotsLastRow >= 2) {
+      hotsSheet.getRange(2, 2, hotsLastRow - 1, 1).getValues().forEach(r => { if (r[0] === scannedId) countForThisId++; });
     }
+    sheet.getRange(row, resultCol).setValue('HOTS x' + countForThisId);
 
-    const currentResult = sheet.getRange(row, resultCol).getValue();
-    if (currentResult === 'HOTS') {
-      return { status: 'duplicate', name: fullName, time: 'already marked HOTS' };
-    }
-
-    sheet.getRange(row, resultCol).setValue('HOTS');
-    return { status: 'success', name: fullName, time: Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'MMM d, h:mm a') };
+    return {
+      status: 'success', name: fullName, company: company, position: position,
+      time: Utilities.formatDate(now, Session.getScriptTimeZone(), 'MMM d, h:mm a'), count: countForThisId
+    };
   } finally {
     lock.releaseLock();
   }
@@ -266,18 +274,14 @@ function getStats() {
   const sheet = getResponseSheet();
   const headers = getHeaderRow(sheet);
   const statusCol = colIndex(headers, STATUS_HEADER);
-  const resultCol = colIndex(headers, INTERVIEW_RESULT_HEADER);
   const lastRow = sheet.getLastRow();
-  if (lastRow < 2) return { status: 'success', checkedIn: 0, hots: 0 };
-
-  const statusValues = sheet.getRange(2, statusCol, lastRow - 1, 1).getValues();
-  const resultValues = sheet.getRange(2, resultCol, lastRow - 1, 1).getValues();
-
-  let checkedIn = 0, hots = 0;
-  for (let i = 0; i < statusValues.length; i++) {
-    if (statusValues[i][0] === 'Checked In') checkedIn++;
-    if (resultValues[i][0] === 'HOTS') hots++;
+  let checkedIn = 0;
+  if (lastRow >= 2) {
+    sheet.getRange(2, statusCol, lastRow - 1, 1).getValues().forEach(r => { if (r[0] === 'Checked In') checkedIn++; });
   }
+  const hotsSheet = getHotsSheet();
+  const hotsLastRow = hotsSheet.getLastRow();
+  const hots = hotsLastRow >= 2 ? hotsLastRow - 1 : 0;
   return { status: 'success', checkedIn: checkedIn, hots: hots };
 }
 
@@ -311,4 +315,116 @@ function getCheckedInList() {
   }
   list.reverse(); // most recently checked-in first
   return { status: 'success', list: list };
+}
+
+const HOTS_SHEET_NAME = 'HOTS Log';
+
+function getHotsSheet() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName(HOTS_SHEET_NAME);
+  if (!sheet) {
+    sheet = ss.insertSheet(HOTS_SHEET_NAME);
+    sheet.appendRow(['Timestamp', 'Unique ID', 'Full Name', 'Company/Agency', 'Position']);
+  }
+  return sheet;
+}
+
+// Looks up a jobseeker and any prior HOTS records, WITHOUT recording anything yet
+function getHotsInfo(scannedId) {
+  if (!scannedId) return { status: 'invalid' };
+  const sheet = getResponseSheet();
+  const headers = getHeaderRow(sheet);
+  const idCol = colIndex(headers, ID_HEADER);
+  const lastCol = colIndex(headers, LAST_NAME_HEADER);
+  const firstCol = colIndex(headers, FIRST_NAME_HEADER);
+  const midCol = colIndex(headers, MIDDLE_NAME_HEADER);
+  const statusCol = colIndex(headers, STATUS_HEADER);
+
+  const idRange = sheet.getRange(2, idCol, Math.max(sheet.getLastRow() - 1, 1), 1);
+  const match = idRange.createTextFinder(scannedId).matchEntireCell(true).findNext();
+  if (!match) return { status: 'invalid' };
+
+  const row = match.getRow();
+  const fullName = [sheet.getRange(row, firstCol).getValue(), sheet.getRange(row, midCol).getValue(), sheet.getRange(row, lastCol).getValue()].filter(String).join(' ');
+  const currentStatus = sheet.getRange(row, statusCol).getValue();
+
+  if (currentStatus !== 'Checked In') {
+    return { status: 'not_checked_in', name: fullName };
+  }
+
+  const hotsSheet = getHotsSheet();
+  const hotsLastRow = hotsSheet.getLastRow();
+  const priorRecords = [];
+  if (hotsLastRow >= 2) {
+    const data = hotsSheet.getRange(2, 1, hotsLastRow - 1, 5).getValues();
+    data.forEach(r => {
+      if (r[1] === scannedId) priorRecords.push({ company: r[3], position: r[4] });
+    });
+  }
+
+  return { status: 'ok', name: fullName, priorRecords: priorRecords };
+}
+
+// Addition of Vacancy List
+const VACANCY_SHEET_NAME = 'Vacancy List';
+const VACANCY_COMPANY_HEADER = 'Company Name';  // EDIT to match your actual column header
+const VACANCY_POSITION_HEADER = 'Position';     // EDIT to match your actual column header
+
+function getVacancyList() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName(VACANCY_SHEET_NAME);
+  if (!sheet) return { status: 'success', vacancies: [] };
+
+  const headers = getHeaderRow(sheet);
+  const companyCol = headers.indexOf(VACANCY_COMPANY_HEADER) + 1;
+  const positionCol = headers.indexOf(VACANCY_POSITION_HEADER) + 1;
+  if (!companyCol || !positionCol) return { status: 'success', vacancies: [] };
+
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) return { status: 'success', vacancies: [] };
+
+  const companies = sheet.getRange(2, companyCol, lastRow - 1, 1).getValues();
+  const positions = sheet.getRange(2, positionCol, lastRow - 1, 1).getValues();
+
+  const vacancies = [];
+  for (let i = 0; i < companies.length; i++) {
+    const c = String(companies[i][0]).trim();
+    const p = String(positions[i][0]).trim();
+    if (c && p) vacancies.push({ company: c, position: p });
+  }
+  return { status: 'success', vacancies: vacancies };
+}
+
+// Get all registrants as Fallback
+function getAllRegistrants() {
+  const sheet = getResponseSheet();
+  const headers = getHeaderRow(sheet);
+  const idCol = colIndex(headers, ID_HEADER);
+  const statusCol = colIndex(headers, STATUS_HEADER);
+  const timeCol = colIndex(headers, CHECKIN_TIME_HEADER);
+  const lastCol = colIndex(headers, LAST_NAME_HEADER);
+  const firstCol = colIndex(headers, FIRST_NAME_HEADER);
+  const midCol = colIndex(headers, MIDDLE_NAME_HEADER);
+
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) return { status: 'success', registrants: [] };
+
+  const numRows = lastRow - 1;
+  const ids = sheet.getRange(2, idCol, numRows, 1).getValues();
+  const statuses = sheet.getRange(2, statusCol, numRows, 1).getValues();
+  const times = sheet.getRange(2, timeCol, numRows, 1).getValues();
+  const lasts = sheet.getRange(2, lastCol, numRows, 1).getValues();
+  const firsts = sheet.getRange(2, firstCol, numRows, 1).getValues();
+  const mids = sheet.getRange(2, midCol, numRows, 1).getValues();
+
+  const registrants = [];
+  for (let i = 0; i < numRows; i++) {
+    const id = ids[i][0];
+    if (!id) continue;
+    const fullName = [firsts[i][0], mids[i][0], lasts[i][0]].filter(String).join(' ');
+    const timeVal = times[i][0];
+    const timeStr = timeVal ? Utilities.formatDate(new Date(timeVal), Session.getScriptTimeZone(), 'MMM d, h:mm a') : '';
+    registrants.push({ id: id, name: fullName, status: statuses[i][0] || 'Not Checked In', time: timeStr });
+  }
+  return { status: 'success', registrants: registrants };
 }
