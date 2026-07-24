@@ -227,7 +227,8 @@ function doGet(e) {
  */
 function checkInAttendee(scannedId) {
   const lock = LockService.getScriptLock();
-  lock.waitLock(15000);
+  const gotLock = lock.tryLock(10000);
+  if (!gotLock) return { status: 'error', message: 'System busy, please try again in a moment.' };
   try {
     if (!scannedId) return { status: 'invalid' };
     const sheet = getResponseSheet();
@@ -244,11 +245,12 @@ function checkInAttendee(scannedId) {
     if (!match) return { status: 'invalid' };
 
     const row = match.getRow();
-    const fullName = [sheet.getRange(row, firstCol).getValue(), sheet.getRange(row, midCol).getValue(), sheet.getRange(row, lastCol).getValue()].filter(String).join(' ');
-    const currentStatus = sheet.getRange(row, statusCol).getValue();
+    const rowValues = sheet.getRange(row, 1, 1, sheet.getLastColumn()).getValues()[0]; // ONE read instead of four
+    const fullName = [rowValues[firstCol - 1], rowValues[midCol - 1], rowValues[lastCol - 1]].filter(String).join(' ');
+    const currentStatus = rowValues[statusCol - 1];
 
     if (currentStatus === 'Checked In') {
-      const time = sheet.getRange(row, timeCol).getValue();
+      const time = rowValues[timeCol - 1];
       return { status: 'duplicate', name: fullName, time: Utilities.formatDate(new Date(time), Session.getScriptTimeZone(), 'MMM d, h:mm a') };
     }
     const now = new Date();
@@ -302,7 +304,8 @@ function getInterviewInfo(scannedId) {
 // from the jobseeker's own registration data — staff only supply Company, Position, and Status.
 function registerInterview(scannedId, company, position, interviewStatus) {
   const lock = LockService.getScriptLock();
-  lock.waitLock(15000);
+  const gotLock = lock.tryLock(10000);
+  if (!gotLock) return { status: 'error', message: 'System busy, please try again in a moment.' };
   try {
     if (!scannedId || !company || !position || !interviewStatus) return { status: 'invalid' };
     const sheet = getResponseSheet();
@@ -324,13 +327,14 @@ function registerInterview(scannedId, company, position, interviewStatus) {
     if (!match) return { status: 'invalid' };
 
     const row = match.getRow();
-    const fullName = [sheet.getRange(row, firstCol).getValue(), sheet.getRange(row, midCol).getValue(), sheet.getRange(row, lastCol).getValue()].filter(String).join(' ');
-    const currentStatus = sheet.getRange(row, statusCol).getValue();
+    const rowValues = sheet.getRange(row, 1, 1, sheet.getLastColumn()).getValues()[0]; // ONE read instead of eight
+    const fullName = [rowValues[firstCol - 1], rowValues[midCol - 1], rowValues[lastCol - 1]].filter(String).join(' ');
+    const currentStatus = rowValues[statusCol - 1];
     if (currentStatus !== 'Checked In') return { status: 'not_checked_in', name: fullName };
 
-    const sex = sheet.getRange(row, genderCol).getValue();
-    const age = calculateAge(sheet.getRange(row, birthdateCol).getValue());
-    const fullAddress = [sheet.getRange(row, barangayCol).getValue(), sheet.getRange(row, municipalityCol).getValue(), sheet.getRange(row, provinceCol).getValue()].filter(String).join(', ');
+    const sex = rowValues[genderCol - 1];
+    const age = calculateAge(rowValues[birthdateCol - 1]);
+    const fullAddress = [rowValues[barangayCol - 1], rowValues[municipalityCol - 1], rowValues[provinceCol - 1]].filter(String).join(', ');
 
     const now = new Date();
     const interviewSheet = getInterviewSheet();
@@ -359,6 +363,10 @@ function registerInterview(scannedId, company, position, interviewStatus) {
  * ====================================================================
  */
 function getStats() {
+  const cache = CacheService.getScriptCache();
+  const cached = cache.get('stats_cache');
+  if (cached) return JSON.parse(cached);
+
   const sheet = getResponseSheet();
   const headers = getHeaderRow(sheet);
   const statusCol = colIndex(headers, STATUS_HEADER);
@@ -367,15 +375,15 @@ function getStats() {
   if (lastRow >= 2) {
     sheet.getRange(2, statusCol, lastRow - 1, 1).getValues().forEach(r => { if (r[0] === 'Checked In') checkedIn++; });
   }
-
   const interviewSheet = getInterviewSheet();
   const interviewLastRow = interviewSheet.getLastRow();
   let hots = 0;
   if (interviewLastRow >= 2) {
     interviewSheet.getRange(2, 9, interviewLastRow - 1, 1).getValues().forEach(r => { if (r[0] === 'Hired On The Spot') hots++; });
   }
-
-  return { status: 'success', checkedIn: checkedIn, hots: hots };
+  const result = { status: 'success', checkedIn: checkedIn, hots: hots };
+  cache.put('stats_cache', JSON.stringify(result), 10);
+  return result;
 }
 
 function getCheckedInList() {
@@ -412,6 +420,10 @@ function getCheckedInList() {
 
 // Full registrant list (checked-in or not) — powers the manual check-in/HOTS fallback in search
 function getAllRegistrants() {
+  const cache = CacheService.getScriptCache();
+  const cached = cache.get('all_registrants_cache');
+  if (cached) return JSON.parse(cached);
+
   const sheet = getResponseSheet();
   const headers = getHeaderRow(sheet);
   const idCol = colIndex(headers, ID_HEADER);
@@ -441,7 +453,9 @@ function getAllRegistrants() {
     const timeStr = timeVal ? Utilities.formatDate(new Date(timeVal), Session.getScriptTimeZone(), 'MMM d, h:mm a') : '';
     registrants.push({ id: id, name: fullName, status: statuses[i][0] || 'Not Checked In', time: timeStr });
   }
-  return { status: 'success', registrants: registrants };
+  const result = { status: 'success', registrants: registrants };
+  cache.put('all_registrants_cache', JSON.stringify(result), 10);
+  return result;
 }
 
 
@@ -451,6 +465,10 @@ function getAllRegistrants() {
  * ====================================================================
  */
 function getVacancyList() {
+  const cache = CacheService.getScriptCache();
+  const cached = cache.get('vacancy_cache');
+  if (cached) return JSON.parse(cached);
+
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sheet = ss.getSheetByName(VACANCY_SHEET_NAME);
   if (!sheet) return { status: 'success', vacancies: [] };
@@ -472,5 +490,7 @@ function getVacancyList() {
     const p = String(positions[i][0]).trim();
     if (c && p) vacancies.push({ company: c, position: p });
   }
-  return { status: 'success', vacancies: vacancies };
+  const result = { status: 'success', vacancies: vacancies };
+  cache.put('vacancy_cache', JSON.stringify(result), 300);
+  return result;
 }
