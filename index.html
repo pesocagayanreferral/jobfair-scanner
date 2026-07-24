@@ -76,7 +76,7 @@ body {
 #screenFlash.flash { animation: screenPulse 1s ease-out forwards; }
 @keyframes screenPulse { 0% { opacity: 0.6; } 25% { opacity: 0.5; } 100% { opacity: 0; } }
 
-/* ── Modals (HOTS form + duplicate confirm) ── */
+/* ── Modals (Interview form + duplicate confirm) ── */
 .modalOverlay {
   display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
   background: rgba(0,0,0,0.65); z-index: 1000;
@@ -86,6 +86,7 @@ body {
   width: 100%; max-width: 400px; background: #1a1a1a;
   border: 1px solid #d4820a; border-radius: 16px; padding: 20px; text-align: left;
   box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+  max-height: 90vh; overflow-y: auto;
 }
 #hotsFormHeading, #dupConfirmHeading { font-size: 13px; color: #d4820a; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; margin-bottom: 4px; }
 #hotsFormName { font-size: 18px; font-weight: 700; margin-bottom: 12px; }
@@ -94,13 +95,15 @@ body {
   display: none; background: #2a1f00; border: 1px solid #b8860b; border-radius: 10px;
   padding: 10px 12px; font-size: 13px; color: #ffd485; margin-bottom: 12px; line-height: 1.5;
 }
-.hotsInput {
+.hotsInput, .hotsSelect {
   width: 100%; font-family: 'Inter', Arial, sans-serif; font-size: 15px; padding: 12px 14px;
   background: #111111; border: 1px solid #333333; border-radius: 10px; color: #f0f0f0;
   outline: none; margin-bottom: 10px; transition: border-color 0.15s ease;
 }
 .hotsInput::placeholder { color: #555555; }
-.hotsInput:focus { border-color: #d4820a; }
+.hotsInput:focus, .hotsSelect:focus { border-color: #d4820a; }
+.hotsSelect { appearance: none; -webkit-appearance: none; cursor: pointer; }
+.fieldLabel { font-size: 11px; color: #888888; text-transform: uppercase; letter-spacing: 0.06em; margin: 0 0 4px 2px; }
 .modalButtons { display: flex; gap: 10px; margin-top: 4px; }
 .modalButtons button {
   flex: 1; font-family: 'Inter', Arial, sans-serif; font-size: 15px; font-weight: 600;
@@ -164,7 +167,7 @@ body {
   </div>
 
   <button id="startBtn" class="scanBtn" onclick="startScanner('checkin')">📷 Scan to Register Jobseeker</button>
-  <button id="hotsBtn"  class="scanBtn" onclick="startScanner('hots')">⭐ Scan to Record HOTS</button>
+  <button id="hotsBtn"  class="scanBtn" onclick="startScanner('hots')">⭐ Scan to Record Interview Result</button>
 
   <div id="modeLabel"></div>
   <div id="reader"></div>
@@ -172,27 +175,41 @@ body {
 
   <div id="hotsFormOverlay" class="modalOverlay">
     <div id="hotsForm" class="modalCard">
-      <div id="hotsFormHeading">Record HOTS For</div>
+      <div id="hotsFormHeading">Record Interview Result For</div>
       <div id="hotsFormName"></div>
       <div id="priorHotsNotice"></div>
+
+      <div class="fieldLabel">Company / Agency</div>
       <div class="autocompleteWrap">
         <input id="companyInput" class="hotsInput" type="text" placeholder="Company / Agency" autocomplete="off" oninput="onCompanyInput()">
         <div id="companySuggestions" class="suggestionBox"></div>
       </div>
+
+      <div class="fieldLabel">Position</div>
       <div class="autocompleteWrap">
         <input id="positionInput" class="hotsInput" type="text" placeholder="Position" autocomplete="off" oninput="onPositionInput()">
         <div id="positionSuggestions" class="suggestionBox"></div>
       </div>
+
+      <div class="fieldLabel">Interview Status</div>
+      <select id="interviewStatusInput" class="hotsSelect">
+        <option value="" disabled selected>Select status...</option>
+        <option value="Qualified">Qualified</option>
+        <option value="Not Qualified">Not Qualified</option>
+        <option value="Hired On The Spot">Hired On The Spot</option>
+        <option value="Near Hires">Near Hires</option>
+      </select>
+
       <div class="modalButtons">
         <button id="hotsCancelBtn" onclick="cancelHotsForm()">Cancel</button>
-        <button id="hotsConfirmBtn" onclick="confirmHotsForm()">Confirm HOTS</button>
+        <button id="hotsConfirmBtn" onclick="confirmHotsForm()">Confirm</button>
       </div>
     </div>
   </div>
 
   <div id="dupConfirmOverlay" class="modalOverlay">
     <div id="dupConfirmCard" class="modalCard">
-      <div id="dupConfirmHeading">⚠️ Confirm Additional HOTS</div>
+      <div id="dupConfirmHeading">⚠️ Confirm Additional Interview Record</div>
       <div id="dupConfirmText"></div>
       <div class="modalButtons">
         <button id="dupCancelBtn" onclick="confirmDupNo()">Go Back</button>
@@ -211,7 +228,7 @@ body {
 
   <script src="https://unpkg.com/html5-qrcode"></script>
   <script>
-    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxYrQIvCGjfHPJXxr1ctM1e4CGskuxPUhAyCZ4Ot2SDoCkygP_DAXYaHuxi8q9yJCcl/exec'; // Change this with your actual Googgle Sheet API
+    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyG_HJ3UkhAShl67R5FrVFKhwB-2ShAjknjqDODiRQ9ET7olE-JmvAD7BkMTGh9syPX/exec';
 
     let isProcessing = false;
     let html5QrCode;
@@ -222,6 +239,7 @@ body {
     let hotsSubmitting = false;
     let pendingCompany = '';
     let pendingPosition = '';
+    let pendingInterviewStatus = '';
     let pendingPriorCount = 0;
     let vacancyData = [];
     let vacancyCompanies = [];
@@ -280,12 +298,11 @@ body {
       });
     }
 
-    // ---- Registrant list: default shows checked-in only; searching reaches everyone ----
     function refreshList() {
       jsonpGet({ action: 'all' }, (data) => {
         if (data.status === 'success') {
           allRegistrants = data.registrants;
-          filterList(); // re-apply whatever is currently in the search box
+          filterList();
         }
       });
     }
@@ -307,7 +324,7 @@ body {
           ? '<span class="registrantName">' + safeName + '</span><br><span class="registrantTime">✓ ' + escapeHtml(item.time) + '</span>'
           : '<span class="registrantName">' + safeName + '</span><br><span class="registrantStatusPending">Not checked in</span>';
         const actionHtml = item.status === 'Checked In'
-          ? '<button class="rowActionBtn hotsActionBtn" onclick="manualHots(\'' + item.id + '\', this)">⭐ HOTS</button>'
+          ? '<button class="rowActionBtn hotsActionBtn" onclick="manualHots(\'' + item.id + '\', this)">⭐ Interview</button>'
           : '<button class="rowActionBtn checkInActionBtn" onclick="manualCheckIn(\'' + item.id + '\', this)">Check In</button>';
         return '<div class="registrantRow"><div class="registrantInfo">' + infoHtml + '</div>' + actionHtml + '</div>';
       }).join('');
@@ -319,7 +336,6 @@ body {
       return div.innerHTML;
     }
 
-    // ---- Manual fallback actions (search results, no camera involved) ----
     function manualCheckIn(id, btnEl) {
       if (btnEl.disabled) return;
       btnEl.disabled = true;
@@ -363,14 +379,14 @@ body {
 
       pageTitle.style.display   = 'none';
       backBtn.style.display     = 'inline-block';
-      pageIndicator.textContent = mode === 'hots' ? 'HOTS' : 'CHECK-IN';
+      pageIndicator.textContent = mode === 'hots' ? 'INTERVIEW' : 'CHECK-IN';
 
       document.getElementById('checkedInCount').closest('div').style.display = mode === 'checkin' ? 'flex' : 'none';
       document.getElementById('hotsCount').closest('div').style.display      = mode === 'hots'    ? 'flex' : 'none';
       counterDivider.style.display = 'none';
 
       modeLabel.style.display = 'block';
-      modeLabel.textContent   = mode === 'hots' ? '⭐ Recording HOTS' : '📷 Registering Jobseeker';
+      modeLabel.textContent   = mode === 'hots' ? '⭐ Recording Interview Result' : '📷 Registering Jobseeker';
       modeLabel.style.color   = mode === 'hots' ? '#d4820a' : '#0b6efd';
 
       html5QrCode = new Html5Qrcode("reader");
@@ -447,7 +463,6 @@ body {
       }
     }
 
-    // In an active scan session, resets to "Point camera..."; in the menu (manual actions), just hides the banner
     function resumeAfterDelay() {
       setTimeout(() => {
         isProcessing = false;
@@ -474,6 +489,7 @@ body {
     function openHotsForm(name, priorRecords) {
       document.getElementById('companyInput').value = '';
       document.getElementById('positionInput').value = '';
+      document.getElementById('interviewStatusInput').value = '';
       document.getElementById('companySuggestions').style.display = 'none';
       document.getElementById('positionSuggestions').style.display = 'none';
       document.getElementById('hotsFormName').textContent = name;
@@ -482,8 +498,8 @@ body {
       const notice = document.getElementById('priorHotsNotice');
       if (pendingPriorCount > 0) {
         notice.style.display = 'block';
-        notice.innerHTML = '⚠️ Already has ' + pendingPriorCount + ' HOTS record(s):<br>' +
-          priorRecords.map(r => '• ' + escapeHtml(r.company) + ' — ' + escapeHtml(r.position)).join('<br>');
+        notice.innerHTML = '⚠️ Already has ' + pendingPriorCount + ' interview record(s):<br>' +
+          priorRecords.map(r => '• ' + escapeHtml(r.company) + ' — ' + escapeHtml(r.position) + ' <i>(' + escapeHtml(r.interviewStatus) + ')</i>').join('<br>');
       } else {
         notice.style.display = 'none';
         notice.innerHTML = '';
@@ -556,27 +572,29 @@ body {
       if (hotsSubmitting) return;
       const company = document.getElementById('companyInput').value.trim();
       const position = document.getElementById('positionInput').value.trim();
-      if (!company || !position) {
-        alert('Please fill in both Company/Agency and Position.');
+      const interviewStatus = document.getElementById('interviewStatusInput').value;
+      if (!company || !position || !interviewStatus) {
+        alert('Please fill in Company/Agency, Position, and Interview Status.');
         return;
       }
 
       if (pendingPriorCount > 0) {
         pendingCompany = company;
         pendingPosition = position;
+        pendingInterviewStatus = interviewStatus;
         hotsFormOverlay.style.display = 'none';
         document.getElementById('dupConfirmText').innerHTML =
-          'This will be HOTS record <b>#' + (pendingPriorCount + 1) + '</b> for this jobseeker. Continue?';
+          'This will be interview record <b>#' + (pendingPriorCount + 1) + '</b> for this jobseeker. Continue?';
         dupConfirmOverlay.style.display = 'flex';
         return;
       }
 
-      submitHots(company, position);
+      submitHots(company, position, interviewStatus);
     }
 
     function confirmDupYes() {
       dupConfirmOverlay.style.display = 'none';
-      submitHots(pendingCompany, pendingPosition);
+      submitHots(pendingCompany, pendingPosition, pendingInterviewStatus);
     }
 
     function confirmDupNo() {
@@ -584,12 +602,12 @@ body {
       hotsFormOverlay.style.display = 'flex';
     }
 
-    function submitHots(company, position) {
+    function submitHots(company, position, interviewStatus) {
       if (hotsSubmitting) return;
       hotsSubmitting = true;
       document.getElementById('hotsConfirmBtn').disabled = true;
 
-      jsonpGet({ action: 'hots', id: pendingHotsId, company: company, position: position }, (res) => {
+      jsonpGet({ action: 'hots', id: pendingHotsId, company: company, position: position, interviewStatus: interviewStatus }, (res) => {
         hotsSubmitting = false;
         document.getElementById('hotsConfirmBtn').disabled = false;
         hotsFormOverlay.style.display = 'none';
@@ -607,8 +625,8 @@ body {
         if (navigator.vibrate) navigator.vibrate(200);
         flashScreen('rgba(30, 126, 52, 0.5)');
         resultDiv.className = 'success';
-        if (res.company) {
-          resultDiv.innerHTML = '✅<br>' + res.name + '<br><span style="font-size:15px">HOTS recorded — ' + res.company + ' (' + res.position + ')</span><br><span style="font-size:12px;color:#ccc">' + res.time + '</span>';
+        if (res.interviewStatus) {
+          resultDiv.innerHTML = '✅<br>' + res.name + '<br><span style="font-size:15px">' + res.interviewStatus + ' — ' + res.company + ' (' + res.position + ')</span><br><span style="font-size:12px;color:#ccc">' + res.time + '</span>';
         } else {
           resultDiv.innerHTML = '✅<br>' + res.name + '<br><span style="font-size:15px">Checked In — ' + res.time + '</span>';
         }
