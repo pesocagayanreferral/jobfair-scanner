@@ -228,7 +228,7 @@ body {
 
   <script src="https://unpkg.com/html5-qrcode"></script>
   <script>
-    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxYrQIvCGjfHPJXxr1ctM1e4CGskuxPUhAyCZ4Ot2SDoCkygP_DAXYaHuxi8q9yJCcl/exec';
+    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzUAVV-8oGz6Fqs1lBB3JnxPUzRT5vJyeccoGA_z9WoZATXuK2TYfDMzGiWL3jj271k/exec';
 
     let isProcessing = false;
     let html5QrCode;
@@ -639,9 +639,9 @@ body {
         flashScreen('rgba(30, 126, 52, 0.5)');
         resultDiv.className = 'success';
         if (res.interviewStatus) {
-          resultDiv.innerHTML = '✅<br>' + res.name + '<br><span style="font-size:15px">' + res.interviewStatus + ' — ' + res.company + ' (' + res.position + ')</span><br><span style="font-size:12px;color:#ccc">' + res.time + '</span>';
+          resultDiv.innerHTML = '✅<br>' + name + '<br><span style="font-size:15px">' + escapeHtml(res.interviewStatus) + ' — ' + company + ' (' + position + ')</span><br><span style="font-size:12px;color:#ccc">' + time + '</span>';
         } else {
-          resultDiv.innerHTML = '✅<br>' + res.name + '<br><span style="font-size:15px">Checked In — ' + res.time + '</span>';
+          resultDiv.innerHTML = '✅<br>' + name + '<br><span style="font-size:15px">Checked In — ' + time + '</span>';
         }
       } else if (res.status === 'duplicate') {
         if (navigator.vibrate) navigator.vibrate([100, 100, 100]);

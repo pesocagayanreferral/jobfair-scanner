@@ -7,7 +7,7 @@ const EMAIL_COLUMN_HEADER = 'Email:';
 const LAST_NAME_HEADER    = 'Last Name:';
 const FIRST_NAME_HEADER   = 'First Name:';
 const MIDDLE_NAME_HEADER  = 'Middle Name:';
-const GENDER_HEADER       = 'Gender:';
+const GENDER_HEADER = 'Sex:';
 const BIRTHDATE_HEADER    = 'Birthdate:';
 const BARANGAY_HEADER     = 'Barangay:';
 const MUNICIPALITY_HEADER = 'Municipality/City:';
@@ -18,7 +18,6 @@ const EVENT_NAME = 'Job Fair 2026';
 const ID_HEADER = 'Unique ID';
 const STATUS_HEADER = 'Status';
 const CHECKIN_TIME_HEADER = 'Check-in Time';
-const EMAIL_STATUS_HEADER = 'Email Status';
 const INTERVIEW_RESULT_HEADER = 'Interview Result';
 
 // Other sheets in this workbook
@@ -43,14 +42,14 @@ function getHeaderRow(sheet) {
 
 function colIndex(headers, name) {
   const idx = headers.indexOf(name);
-  if (idx === -1) throw new Error('Column not found: ' + name);
+  if (idx === -1) return 0;
   return idx + 1;
 }
 
 function ensureHeaders() {
   const sheet = getResponseSheet();
   const headers = getHeaderRow(sheet);
-  const toAdd = [ID_HEADER, STATUS_HEADER, CHECKIN_TIME_HEADER, EMAIL_STATUS_HEADER, INTERVIEW_RESULT_HEADER];
+  const toAdd = [ID_HEADER, STATUS_HEADER, CHECKIN_TIME_HEADER, INTERVIEW_RESULT_HEADER];
   let lastCol = sheet.getLastColumn();
   toAdd.forEach(h => {
     if (headers.indexOf(h) === -1) {
@@ -93,93 +92,15 @@ function onFormSubmitHandler(e) {
   const headers = getHeaderRow(sheet);
   const row = e.range.getRow();
 
-  const emailCol = colIndex(headers, EMAIL_COLUMN_HEADER);
   const lastCol  = colIndex(headers, LAST_NAME_HEADER);
   const firstCol = colIndex(headers, FIRST_NAME_HEADER);
   const midCol   = colIndex(headers, MIDDLE_NAME_HEADER);
   const idCol    = colIndex(headers, ID_HEADER);
   const statusCol = colIndex(headers, STATUS_HEADER);
-  const emailStatusCol = colIndex(headers, EMAIL_STATUS_HEADER);
-
-  const email = sheet.getRange(row, emailCol).getValue();
-  const firstName = sheet.getRange(row, firstCol).getValue();
-  const middleName = sheet.getRange(row, midCol).getValue();
-  const lastName = sheet.getRange(row, lastCol).getValue();
-  const fullName = [firstName, middleName, lastName].filter(String).join(' ');
 
   const uniqueId = Utilities.getUuid();
   sheet.getRange(row, idCol).setValue(uniqueId);
   sheet.getRange(row, statusCol).setValue('Not Checked In');
-
-  try {
-    sendTicketEmail(email, fullName, uniqueId);
-    sheet.getRange(row, emailStatusCol).setValue('Sent');
-  } catch (err) {
-    sheet.getRange(row, emailStatusCol).setValue('Pending - ' + err.message);
-  }
-}
-
-function sendTicketEmail(email, name, uniqueId) {
-  const qrBlob = generateQRCodeBlob(uniqueId);
-
-  const htmlBody = `
-    <p>Hi ${name},</p>
-    <p>You're pre-registered for <b>${EVENT_NAME}</b>. Please show this QR code at check-in (a screenshot works fine):</p>
-    <p><img src="cid:qr"/></p>
-    <p>Reference ID: <b>${uniqueId}</b></p>
-    <p>See you there!</p>
-  `;
-
-  GmailApp.sendEmail(email, `Your ${EVENT_NAME} Entry Pass`, 'Please view this email in HTML to see your QR code.', {
-    htmlBody: htmlBody,
-    inlineImages: { qr: qrBlob }
-  });
-}
-
-// Safety net: resends any emails that failed (e.g. hit the daily quota)
-function retryPendingEmails() {
-  const sheet = getResponseSheet();
-  const headers = getHeaderRow(sheet);
-  const emailCol = colIndex(headers, EMAIL_COLUMN_HEADER);
-  const lastCol  = colIndex(headers, LAST_NAME_HEADER);
-  const firstCol = colIndex(headers, FIRST_NAME_HEADER);
-  const midCol   = colIndex(headers, MIDDLE_NAME_HEADER);
-  const idCol    = colIndex(headers, ID_HEADER);
-  const emailStatusCol = colIndex(headers, EMAIL_STATUS_HEADER);
-
-  const data = sheet.getDataRange().getValues();
-  for (let r = 1; r < data.length; r++) {
-    if (String(data[r][emailStatusCol - 1]).indexOf('Pending') === 0) {
-      const fullName = [data[r][firstCol - 1], data[r][midCol - 1], data[r][lastCol - 1]].filter(String).join(' ');
-      try {
-        sendTicketEmail(data[r][emailCol - 1], fullName, data[r][idCol - 1]);
-        sheet.getRange(r + 1, emailStatusCol).setValue('Sent');
-      } catch (err) {
-        sheet.getRange(r + 1, emailStatusCol).setValue('Pending - ' + err.message);
-      }
-    }
-  }
-}
-
-// Generates a QR code image with automatic retries — isolates all QR logic in one place
-function generateQRCodeBlob(uniqueId) {
-  const qrUrl = 'https://quickchart.io/qr?text=' + encodeURIComponent(uniqueId) + '&size=300';
-  const maxRetries = 3;
-  let lastError;
-
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
-      const response = UrlFetchApp.fetch(qrUrl, { muteHttpExceptions: true });
-      if (response.getResponseCode() === 200) {
-        return response.getBlob().setName('qr.png');
-      }
-      lastError = new Error('QR API returned status ' + response.getResponseCode());
-    } catch (err) {
-      lastError = err;
-    }
-    Utilities.sleep(1000 * attempt); // wait longer each retry: 1s, 2s, 3s
-  }
-  throw lastError;
 }
 
 
@@ -205,6 +126,8 @@ function doGet(e) {
       result = getVacancyList();
     } else if (e.parameter.action === 'all') {
       result = getAllRegistrants();
+    } else if (e.parameter.action === 'ticket' && e.parameter.email) {
+      result = getTicketByEmail(e.parameter.email);
     } else {
       result = { status: 'ready', message: EVENT_NAME + ' API is running' };
     }
@@ -256,6 +179,7 @@ function checkInAttendee(scannedId) {
     const now = new Date();
     sheet.getRange(row, statusCol).setValue('Checked In');
     sheet.getRange(row, timeCol).setValue(now);
+    CacheService.getScriptCache().removeAll(['stats_cache', 'all_registrants_cache']);
     return { status: 'success', name: fullName, time: Utilities.formatDate(now, Session.getScriptTimeZone(), 'MMM d, h:mm a') };
   } finally {
     lock.releaseLock();
@@ -285,8 +209,9 @@ function getInterviewInfo(scannedId) {
   if (!match) return { status: 'invalid' };
 
   const row = match.getRow();
-  const fullName = [sheet.getRange(row, firstCol).getValue(), sheet.getRange(row, midCol).getValue(), sheet.getRange(row, lastCol).getValue()].filter(String).join(' ');
-  const currentStatus = sheet.getRange(row, statusCol).getValue();
+  const rowValues = sheet.getRange(row, 1, 1, sheet.getLastColumn()).getValues()[0];
+  const fullName = [rowValues[firstCol - 1], rowValues[midCol - 1], rowValues[lastCol - 1]].filter(String).join(' ');
+  const currentStatus = rowValues[statusCol - 1];
   if (currentStatus !== 'Checked In') return { status: 'not_checked_in', name: fullName };
 
   const interviewSheet = getInterviewSheet();
@@ -346,6 +271,7 @@ function registerInterview(scannedId, company, position, interviewStatus) {
       interviewSheet.getRange(2, 2, lastRow - 1, 1).getValues().forEach(r => { if (r[0] === scannedId) totalCountForId++; });
     }
     sheet.getRange(row, resultCol).setValue(interviewStatus + (totalCountForId > 1 ? ' (x' + totalCountForId + ')' : ''));
+    CacheService.getScriptCache().removeAll(['stats_cache', 'all_registrants_cache']);
 
     return {
       status: 'success', name: fullName, company: company, position: position, interviewStatus: interviewStatus,
@@ -456,6 +382,48 @@ function getAllRegistrants() {
   const result = { status: 'success', registrants: registrants };
   cache.put('all_registrants_cache', JSON.stringify(result), 10);
   return result;
+}
+
+
+/**
+ * ====================================================================
+ * TICKET LOOKUP ? shows a registrant's QR pass on the landing page
+ * ====================================================================
+ */
+function getTicketByEmail(email) {
+  const cache = CacheService.getScriptCache();
+  const cached = cache.get('ticket_cache_' + email.toLowerCase());
+  if (cached) return JSON.parse(cached);
+
+  const sheet = getResponseSheet();
+  const headers = getHeaderRow(sheet);
+  const emailCol = colIndex(headers, EMAIL_COLUMN_HEADER);
+  const idCol = colIndex(headers, ID_HEADER);
+  const lastCol = colIndex(headers, LAST_NAME_HEADER);
+  const firstCol = colIndex(headers, FIRST_NAME_HEADER);
+  const midCol = colIndex(headers, MIDDLE_NAME_HEADER);
+
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) return { status: 'error', message: 'No registration found for that email.' };
+
+  const emails = sheet.getRange(2, emailCol, lastRow - 1, 1).getValues();
+  const ids = sheet.getRange(2, idCol, lastRow - 1, 1).getValues();
+  const firsts = sheet.getRange(2, firstCol, lastRow - 1, 1).getValues();
+  const mids = sheet.getRange(2, midCol, lastRow - 1, 1).getValues();
+  const lasts = sheet.getRange(2, lastCol, lastRow - 1, 1).getValues();
+
+  const target = String(email).trim().toLowerCase();
+  for (let i = 0; i < emails.length; i++) {
+    if (String(emails[i][0]).trim().toLowerCase() === target) {
+      const id = ids[i][0];
+      if (!id) return { status: 'pending', message: 'Your pass is being generated. Please try again in a few seconds.' };
+      const fullName = [firsts[i][0], mids[i][0], lasts[i][0]].filter(String).join(' ');
+      const result = { status: 'success', name: fullName, id: String(id) };
+      cache.put('ticket_cache_' + target, JSON.stringify(result), 300);
+      return result;
+    }
+  }
+  return { status: 'error', message: 'No registration found for that email.' };
 }
 
 

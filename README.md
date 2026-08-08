@@ -12,7 +12,7 @@ Google Sheet ("Form Responses")  ◄──── source of truth for all data
         │
         ▼
 Google Apps Script (Code.gs)
-  • Generates unique ID + QR code per registrant, emails ticket
+  • Generates unique ID per registrant; serves the ticket/QR lookup API
   • Serves a JSON/JSONP API (doGet) for the scanner front end
   • Manages check-in, interview logging, stats, search
         │
@@ -29,7 +29,7 @@ Two extra sheets in the same workbook:
 
 ## Features
 
-- **Pre-registration → automatic e-ticket email** with embedded QR code (unique ID per registrant), with automatic retries on both QR generation and email delivery.
+- **Pre-registration → self-serve QR pass** — after submitting the form, registrants open a landing page, enter their email, and screenshot their QR code. No email is sent, so no Gmail spam-flagging or quota risk.
 - **QR check-in scanning** — camera-based, works on any phone browser, with haptic feedback and on-screen confirmation.
 - **Interview result recording** — scan a checked-in jobseeker to log an interview outcome (Qualified / Not Qualified / Hired On The Spot / Near Hires) against a specific Company and Position, with autocomplete sourced from the Vacancy List. Supports multiple interview records per jobseeker, with an explicit staff confirmation step before adding a repeat entry.
 - **Manual fallback** — search any registrant by name (checked-in or not) and check them in or record an interview manually, for when a QR code won't scan.
@@ -42,6 +42,7 @@ Two extra sheets in the same workbook:
 |---|---|
 | `Code.gs` | Apps Script backend — bound to the Form Responses sheet |
 | `index.html` | Scanner front end — deployed on GitHub Pages |
+| `ticket.html` | Registrant QR pass page — deployed on GitHub Pages, linked from the Form confirmation |
 
 ## Setup
 
@@ -50,13 +51,13 @@ Two extra sheets in the same workbook:
    - Paste in `Code.gs`.
    - Edit the header constants at the top of the file to match your Form's exact question text (see Configuration below).
    - Set a trigger: `onFormSubmitHandler`, event source *From spreadsheet*, event type *On form submit*.
-   - Optional: a time-driven trigger for `retryPendingEmails` (daily) as a safety net for any emails that hit Gmail's sending quota.
    - `Deploy → New deployment → Web app` — **Execute as: Me**, **Who has access: Anyone** (required for the scanner page to reach it without a login wall).
 3. **GitHub Pages**:
-   - Create a public repo, upload `index.html`.
-   - Paste your Apps Script Web App `/exec` URL into the `APPS_SCRIPT_URL` constant near the top of the `<script>` block.
+   - Create a public repo, upload `index.html` and `ticket.html`.
+   - Paste your Apps Script Web App `/exec` URL into the `APPS_SCRIPT_URL` constant near the top of the `<script>` block in both files.
    - Enable Pages under repo Settings → Pages → Deploy from branch → `main` / root.
    - Bookmark the resulting URL on staff phones.
+4. **Google Form confirmation** — in Settings → Presentation, tell registrants to open your `ticket.html` URL, enter the email they registered with, and screenshot their QR pass. No e-ticket email is sent anymore.
 
 ## Configuration
 
