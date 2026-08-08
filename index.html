@@ -273,8 +273,16 @@ body {
     function jsonpGet(params, onDone) {
       const callbackName = 'jsonpCallback_' + (jsonpCounter++);
       const script = document.createElement('script');
-      window[callbackName] = function(data) { onDone(data); delete window[callbackName]; script.remove(); };
-      script.onerror = function() { onDone({ status: 'error', message: 'Network error' }); delete window[callbackName]; script.remove(); };
+      const timeout = setTimeout(() => {
+        onDone({ status: 'error', message: 'Request timed out. Server may be busy.' });
+        delete window[callbackName]; script.remove();
+      }, 10000);
+      window[callbackName] = function(data) { clearTimeout(timeout); onDone(data); delete window[callbackName]; script.remove(); };
+      script.onerror = function() {
+        clearTimeout(timeout);
+        onDone({ status: 'error', message: 'Cannot connect to server. Check your connection and that the Apps Script is deployed.' });
+        delete window[callbackName]; script.remove();
+      };
       const query = Object.keys(params).map(k => k + '=' + encodeURIComponent(params[k])).join('&');
       script.src = APPS_SCRIPT_URL + '?' + query + '&callback=' + callbackName;
       document.body.appendChild(script);
@@ -621,6 +629,11 @@ body {
     }
 
     function handleResult(res) {
+      const name = escapeHtml(res.name);
+      const company = escapeHtml(res.company);
+      const position = escapeHtml(res.position);
+      const time = escapeHtml(res.time);
+
       if (res.status === 'success') {
         if (navigator.vibrate) navigator.vibrate(200);
         flashScreen('rgba(30, 126, 52, 0.5)');
@@ -634,17 +647,17 @@ body {
         if (navigator.vibrate) navigator.vibrate([100, 100, 100]);
         flashScreen('rgba(184, 134, 11, 0.5)');
         resultDiv.className = 'duplicate';
-        resultDiv.innerHTML = '⚠️<br>' + res.name + '<br><span style="font-size:15px">Already recorded — ' + res.time + '</span>';
+        resultDiv.innerHTML = '⚠️<br>' + name + '<br><span style="font-size:15px">Already recorded — ' + time + '</span>';
       } else if (res.status === 'not_checked_in') {
         if (navigator.vibrate) navigator.vibrate([150, 100, 150, 100, 150]);
         flashScreen('rgba(167, 29, 42, 0.5)');
         resultDiv.className = 'invalid';
-        resultDiv.innerHTML = '🚫<br>' + res.name + '<br><span style="font-size:15px">Not checked in yet — send to Check-In first</span>';
+        resultDiv.innerHTML = '🚫<br>' + name + '<br><span style="font-size:15px">Not checked in yet — send to Check-In first</span>';
       } else if (res.status === 'error') {
         if (navigator.vibrate) navigator.vibrate(500);
         flashScreen('rgba(167, 29, 42, 0.5)');
         resultDiv.className = 'invalid';
-        resultDiv.innerHTML = '⚠️ System Error<br><span style="font-size:14px">' + res.message + '</span>';
+        resultDiv.innerHTML = '⚠️ System Error<br><span style="font-size:14px">' + escapeHtml(res.message) + '</span>';
       } else {
         if (navigator.vibrate) navigator.vibrate(500);
         flashScreen('rgba(167, 29, 42, 0.5)');
