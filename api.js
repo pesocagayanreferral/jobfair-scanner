@@ -106,13 +106,20 @@ window.REGISTRATION_API = (function () {
           signal: controller ? controller.signal : undefined
         }).then(function (res) {
           if (timer) clearTimeout(timer);
-          return res.json().catch(function () { throw ApiError(MSG_BACKEND); }).then(function (data) {
-            if (!res.ok) { console.error('Registration backend error', data); throw ApiError(MSG_BACKEND); }
+          // A readable JSON body means the backend processed the request:
+          // classify from the payload, never as a network failure.
+          return res.json().catch(function () {
+            // Unparseable body — cannot trust any verdict; generic backend message.
+            console.error('Registration backend returned an unreadable body (HTTP ' + res.status + ')');
+            throw ApiError(MSG_BACKEND);
+          }).then(function (data) {
+            if (!res.ok) { console.error('Registration backend error', data); throw ApiError(data && (data.message || messageForCode(data.code))); }
             return normalizeResponse(data);
           });
         }, function (err) {
           if (timer) clearTimeout(timer);
           console.error(err);
+          // No valid backend response was received — genuine transport issue.
           throw ApiError(err && err.name === 'AbortError' ? MSG_TIMEOUT : MSG_NETWORK);
         });
       });
@@ -137,8 +144,11 @@ window.REGISTRATION_API = (function () {
         message: data.message || ''
       };
     }
+    // Application-level rejection (rate_limited, validation, busy, ...).
+    // The backend processed the request — surface ITS verdict, never a
+    // network error. Server-authored message first, mapped code text second.
     console.error('Registration rejected by backend', data);
-    throw ApiError(messageForCode(data && data.code));
+    throw ApiError((data && data.message) || messageForCode(data && data.code));
   }
 
   function fileToDataUrl(file) {
