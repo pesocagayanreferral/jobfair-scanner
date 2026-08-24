@@ -22,7 +22,7 @@ window.REGISTRATION_API = (function () {
 
   var APPS_SCRIPT_URL =
     window.VITE_APPS_SCRIPT_URL ||
-    'https://script.google.com/macros/s/AKfycbzUAVV-8oGz6Fqs1lBB3JnxPUzRT5vJyeccoGA_z9WoZATXuK2TYfDMzGiWL3jj271k/exec';
+    'https://script.google.com/macros/s/AKfycbwgB4E6gqU5aVlaa-dNbsC6UotAIRXnwiMeWGDnaGH8Et4seXELY7lQdx0gb40JJwJMOA/exec';
 
   var CONFIG = {
     APPS_SCRIPT_URL: APPS_SCRIPT_URL,
