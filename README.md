@@ -42,6 +42,67 @@ Two extra sheets in the same workbook:
 |---|---|
 | `Code.gs` | Apps Script backend — bound to the Form Responses sheet |
 | `index.html` | Scanner front end — deployed on GitHub Pages |
+| `registration.html` | Applicant registration form (multi-step, mobile-friendly) |
+| `api.js` | API abstraction for the registration form — holds the Apps Script endpoint |
+
+## Applicant Registration Form
+
+Replaces the Google Form pipeline with a self-hosted form. Submissions go straight into the **first sheet of the same workbook**, so every registrant is immediately visible to the existing scanner/check-in system.
+
+```
+Applicant Browser → registration.html → api.js (submitApplicant)
+                  → Apps Script doPost (Code.gs)
+                  → Google Sheet + Google Drive (uploads) + Gmail ticket
+```
+
+### Setup
+
+1. Update `Code.gs` in your Apps Script project, then redeploy the web app:
+   **Deploy → Manage deployments → Edit (pencil) → Version: New version → Deploy**.
+   Reusing the same deployment keeps the existing `/exec` URL, so `index.html` and `ticket.html` keep working unchanged.
+2. In `api.js`, set `APPS_SCRIPT_URL` to that web app `/exec` URL (it plays the role of an environment variable; GitHub Pages has none). No secrets go in this file.
+3. Host `registration.html` + `api.js` alongside `index.html` on GitHub Pages and share the page link with applicants.
+
+### Behavior
+
+- **System-generated columns** (`Timestamp`, `Unique ID`, `Status`, `Check-in Time`, `Email Status`, `Interview Result`) are written server-side at submission time; applicants never see or edit them.
+- **Headers**: any missing canonical headers are appended automatically without moving existing columns. For a brand-new spreadsheet you can run `setupRegistrationSheet()` once from the editor to write the exact header order.
+- **Reference numbers**: each submission gets a sequential ID like `JF26-00001` plus a UUID; both appear on the success screen.
+- **Duplicate protection**: a submission with the *same email + first name + last name* as an existing row is rejected server-side; the applicant is shown their original reference number.
+- **Uploads**: resume (PDF/DOC/DOCX) and PWD ID (JPG/PNG/PDF, ≤5 MB enforced client-side, 8 MB server-side) are stored in a Drive folder named **Job Fair Applicant Uploads**; the file link is written into the sheet column.
+- **Ticket email**: sent immediately after registration when possible. The success screen only claims an email was sent if the backend confirms it.
+
+## Security & Reliability Remediations
+
+Applied following a static production-readiness audit. All protections are server-side (`Code.gs`); client checks remain as UX only.
+
+- **Spreadsheet formula injection** — registration rows are written via `writeRegistrationRow_()`: every column except `Timestamp`/`Birthdate` is forced to plain-text (`'@'`) number format before `setValues`, so values beginning with `=`, `+`, `-`, `@`, or TAB are stored literally and can never execute as formulas. *(Note: the pre-existing Interview Log writer used by scanner action `hots` is out of scope here — see Remaining Risks.)*
+- **Email HTML injection** — applicant-controlled names are HTML-escaped (`escapeHtml_`) inside `sendTicketEmail()` before interpolation into the message body.
+- **Abuse damping** — layered, anonymous-friendly: (1) hidden honeypot field rejected server-side; (2) per-email cooldown of 3 accepted registrations per hour (`CacheService` counter, fails open); (3) request caps — ≤15 MB body, ≤40 fields, ≤1000 chars/field; (4) uploads validated server-side (extension whitelist, MIME whitelist, ≤8 MB decoded) and rolled back (trashed) if a later upload or the Sheet write fails; (5) error codes distinguish malformed / validation / duplicate / rate-limited / busy / upload / storage / internal failures, mapped to friendly messages in `api.js`.
+- **Duplicate response** returns only the reference number — never the internal UUID or any storage identifier.
+- **Ticket lookup** (`action:'ticket'`) is now implemented: email lookup, rate-limited to 5 lookups/min/email, returning only the name and ticket UUID (the same QR payload the confirmation email already delivers). Pending-email-status triggers the page's built-in retry.
+- **Schema hazard** — the live workbook may still be attached to a legacy Google Form whose question texts differ from the canonical 36 headers. If both sources write to sheet[0], semantic duplicate columns can appear and the scanner may read legacy columns for new rows. Before production: either detach the Form deliberately, point the form responses to their own spreadsheet, or start registration on a fresh workbook initialized once with `setupRegistrationSheet()`. This cannot be verified from source code.
+
+### Known remaining risks (deferred by scope)
+
+The pre-existing public scanner API actions (`stats`, `list`, `all`, `hots_info`, `hots`) remain unauthenticated and unthrottled, and `hots` writes staff-supplied strings into the Interview Log without formula neutralization. Hardening these is a separate task because they belong to the legacy scanner architecture.
+
+## Form Choices Management
+
+Selectable options in the registration form are configuration-driven via a **"Form Choices"** sheet tab (auto-created and seeded with the original choices on first use). Schema: `Choice ID · Field Key · Choice Value · Display Label · Active · Sort Order · Created At · Updated At`.
+
+- **Managed fields**: Interview Location, Gender, Civil Status, Education Attainment, Employment Preference, PESO Assistance Programs. Yes/No questions (First-time Jobseeker, Returning OFW?, Returning Worker, Skills Training, Disability) are **locked** — their values drive conditional logic. PESO "**None**" is a protected value (cannot be deactivated/renamed; exclusivity logic is value-based).
+- **Deactivation over deletion**: inactive choices disappear from new forms; historical submissions keep their stored values untouched.
+- **Public read**: `GET action=form_choices` returns active choices only (cached 5 min, invalidated on every mutation). `registration.html` falls back to its built-in defaults if the endpoint fails — the form never becomes unusable.
+- **Server-side authority**: registration validation checks submitted values against ACTIVE configured choices; fabricated/inactive values are rejected regardless of what the browser shows.
+
+### Admin access provisioning
+
+1. In the Apps Script editor run **`generateFormChoicesAdminKey()`** once. It stores a key in Script Properties and logs it once (execution logs are owner-only).
+2. Share the key with authorized staff. They open `admin/form-choices.html`, paste it once per browser session, and manage choices.
+3. To rotate: re-run `generateFormChoicesAdminKey()` (old key stops working immediately).
+
+**Authorization model & limitations:** mutations (`add/update/toggle/reorder/list`) are server-authorized against the Script Properties key, sent only in POST bodies (never URLs), with failed attempts rate-limited (10 failures → 15-minute lockout) and audited to a "Choices Audit Log" tab. This is a **shared-secret** model: there are no individual staff identities under the current anonymous Apps Script architecture, so audit entries record actions but not who performed them. Do not treat this as multi-user access control.
 
 ## Setup
 

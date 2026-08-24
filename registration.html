@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Job Fair 2026 — Jobseeker Registration</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="design-system.css">
+<style>
+  /* Page accent — REGISTER = BLUE */
+  :root {
+    --accent: #1A56DB;
+    --accent-dark: #143FA0;
+    --accent-soft: #EAEFFB;
+    --accent-contrast: #FFFFFF;
+  }
+
+  /* Hero (step 1 only) */
+  .hero {
+    text-align: left; margin: 0 0 var(--s-5); padding-top: var(--s-2);
+    border-top: 3px solid var(--accent); padding-top: var(--s-5);
+  }
+  .hero__eyebrow {
+    font-family: var(--font-display); font-size: 12px; font-weight: 700;
+    letter-spacing: 0.18em; text-transform: uppercase; color: var(--accent-dark);
+    margin-bottom: var(--s-3);
+  }
+  .hero__title {
+    font-size: 34px; line-height: 1.04; letter-spacing: -0.03em;
+    margin-bottom: var(--s-3); color: var(--ink);
+  }
+  .hero__sub { font-size: 15.5px; color: var(--ink-soft); line-height: 1.55; margin-bottom: var(--s-4); max-width: 36ch; }
+  .hero__cta { max-width: 320px; }
+  .hero__note {
+    display: flex; align-items: center; gap: 8px; margin-top: var(--s-4);
+    font-size: 12.5px; color: var(--ink-faint); line-height: 1.45;
+  }
+  .hero__note svg { flex-shrink: 0; color: var(--accent); }
+
+  /* Desktop stepper */
+  .stepper { display: none; }
+  @media (min-width: 768px) {
+    .stepper {
+      display: flex; align-items: center; gap: 0; margin: 0 auto var(--s-5);
+      max-width: var(--maxw); padding: 0 var(--s-5); width: 100%;
+    }
+    .stepper .dot {
+      flex: 1; display: flex; flex-direction: column; align-items: center; gap: 7px;
+      font-family: var(--font-display); font-size: 11px; font-weight: 600;
+      color: var(--ink-faint); position: relative;
+    }
+    .stepper .dot::before {
+      content: ""; width: 26px; height: 26px; border-radius: 50%;
+      background: var(--surface); border: 2px solid var(--line-strong);
+      display: grid; place-items: center; font-size: 11px; color: var(--ink-faint);
+      transition: all .2s ease; z-index: 1;
+    }
+    .stepper .dot::after {
+      content: ""; position: absolute; top: 13px; left: 50%; width: 100%; height: 2px;
+      background: var(--line-strong); z-index: 0;
+    }
+    .stepper .dot:last-child::after { display: none; }
+    .stepper .dot.is-done::before { background: var(--accent); border-color: var(--accent); color: #fff; content: "✓"; }
+    .stepper .dot.is-done::after { background: var(--accent); }
+    .stepper .dot.is-current { color: var(--accent-dark); }
+    .stepper .dot.is-current::before { border-color: var(--accent); color: var(--accent-dark); box-shadow: 0 0 0 4px var(--accent-soft); }
+    .stepIndicator { display: none; }
+  }
+
+  .navBtns { display: flex; gap: 10px; max-width: var(--maxw); margin: var(--s-5) auto 0; }
+  .navBtns button {
+    flex: 1; font-family: var(--font-body); font-size: 15px; font-weight: 600;
+    padding: 15px; border: none; border-radius: var(--r-md); cursor: pointer;
+    transition: filter .15s ease, transform .1s ease; letter-spacing: -0.01em; min-height: var(--tap);
+  }
+  .navBtns button:active { transform: scale(.98); }
+  .navBtns button:hover { filter: brightness(1.05); }
+  #backBtn { background: var(--surface); color: var(--ink); border: 1px solid var(--line-strong) !important; }
+  #nextBtn, #submitBtn { background: var(--accent); color: var(--accent-contrast); }
+  .navBtns button[style*="flex:2"] { flex: 2; }
+
+  .req-legend { font-size: 11.5px; color: var(--ink-faint); margin: 0 auto var(--s-4); max-width: var(--maxw); padding: 0 2px; }
+  .req-legend b { color: var(--accent); }
+
+  /* Honeypot — visually removed but present in the DOM so naive bots fill it */
+  .hpField { position: absolute; left: -9999px; top: -9999px; width: 1px; height: 1px; overflow: hidden; }
+
+  /* Live configuration notice (shown only when falling back / degraded) */
+  .configNote {
+    display: none; max-width: var(--maxw); margin: 0 auto var(--s-4);
+    font-size: 12.5px; color: #b8860b; text-align: center; line-height: 1.5;
+    padding: 8px 12px; border: 1px solid rgba(184,134,11,.45);
+    border-radius: var(--r-md, 8px); background: rgba(184,134,11,.08);
+  }
+</style>
+</head>
+<body>
+
+<div class="brandbar">
+  <span class="brandbar__mark" aria-hidden="true">
+    <svg width="16" height="16" viewBox="0 0 16 16"><path d="M2 2h5v5H2zM9 2h5v5H9zM2 9h5v5H2zM9 9h5v5H9z" fill="#fff" opacity=".95"/></svg>
+  </span>
+  <span class="brandbar__text">
+    <span class="brandbar__title">Job Fair 2026</span>
+    <span class="brandbar__sub">Digital System · Register</span>
+  </span>
+</div>
+
+<header id="headerRow">
+  <div class="stepIndicator">
+    <span class="stepIndicator__count" id="pageIndicator">STEP 1 OF 11</span>
+    <span class="stepIndicator__title" id="stepTitle"></span>
+  </div>
+  <div class="progressWrap" id="progressWrap"><div class="progressBar" id="progressBar"></div></div>
+  <nav class="stepper" id="stepper" aria-label="Registration progress">
+    <span class="dot">01</span><span class="dot">02</span><span class="dot">03</span><span class="dot">04</span><span class="dot">05</span><span class="dot">06</span><span class="dot">07</span><span class="dot">08</span><span class="dot">09</span><span class="dot">10</span><span class="dot">11</span>
+  </nav>
+  <p class="req-legend"><b>*</b> Required field. Recommended fields are optional but help employers match you.</p>
+</header>
+
+<p class="configNote" id="configNote" role="status" aria-live="polite"></p>
+
+<main id="formShell" class="shell">
+<form id="regForm" novalidate autocomplete="on">
+
+  <div class="hpField" aria-hidden="true">
+    <label for="website">Website</label>
+    <input type="text" id="website" name="website" tabindex="-1" autocomplete="off">
+  </div>
+
+  <!-- 1 · DATA PRIVACY / CONSENT -->
+  <section class="step active" id="step1">
+    <div class="hero">
+      <div class="hero__eyebrow">Job Fair · Online Registration</div>
+      <h1 class="hero__title">Your next opportunity starts here.</h1>
+      <p class="hero__sub">Create your applicant profile and get your digital entry pass for the Provincial Job Fair. It takes about five minutes.</p>
+      <button type="button" class="btn btn--primary btn--lg hero__cta" onclick="document.getElementById('consentField').scrollIntoView({behavior:'smooth',block:'center'})">Begin Registration</button>
+      <p class="hero__note">
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M8 1l6 2v4c0 3.5-2.5 6.5-6 8-3.5-1.5-6-4.5-6-8V3l6-2z" stroke="currentColor" stroke-width="1.4"/><path d="M5.5 8l1.8 1.8L11 6" stroke="currentColor" stroke-width="1.4"/></svg>
+        Your data is protected under the Data Privacy Act (RA 10173).
+      </p>
+    </div>
+    <div class="card">
+      <h3 class="sectionTitle">1 · Data Privacy / Consent</h3>
+      <p class="sectionHint">Your personal data is collected solely for job fair registration, employment referral, and related PESO programs, in accordance with the Data Privacy Act (RA 10173).</p>
+      <div class="hintBox">
+        As a data subject, you have the right to be informed, to access your records, to rectify inaccurate details, to object to processing, and to request erasure of your data, subject to legal conditions.
+      </div>
+      <div class="field" id="consentField">
+        <label class="fieldLabel req" for="privacyConsent">Data Subject Rights — Consent</label>
+        <div class="optGroup">
+          <label class="optRow" for="privacyConsent">
+            <input type="checkbox" id="privacyConsent" name="privacyConsent">
+            <span>I have read and understood the Data Privacy Notice, and I consent to the collection and processing of my personal information for this job fair.</span>
+          </label>
+        </div>
+        <div class="fieldError" id="err-privacyConsent"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2 · INTERVIEW LOCATION -->
+  <section class="step" id="step2">
+    <div class="card">
+      <h3 class="sectionTitle">2 · Interview Location</h3>
+      <p class="sectionHint">Choose where you will attend your interview on the day of the job fair.</p>
+      <div class="field">
+        <label class="fieldLabel req" for="interviewLocation">Location for Interview:</label>
+        <select class="inp" id="interviewLocation">
+          <option value="" disabled selected>Select location...</option>
+        </select>
+        <div class="fieldError" id="err-interviewLocation"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3 · PERSONAL INFORMATION -->
+  <section class="step" id="step3">
+    <div class="card">
+      <h3 class="sectionTitle">3 · Personal Information</h3>
+      <p class="sectionHint">Enter your name exactly as it appears on your valid ID.</p>
+      <div class="field">
+        <label class="fieldLabel req" for="lastName">Last Name:</label>
+        <input class="inp" type="text" id="lastName" autocomplete="family-name" maxlength="60">
+        <div class="fieldError" id="err-lastName"></div>
+      </div>
+      <div class="field">
+        <label class="fieldLabel req" for="firstName">First Name:</label>
+        <input class="inp" type="text" id="firstName" autocomplete="given-name" maxlength="60">
+        <div class="fieldError" id="err-firstName"></div>
+      </div>
+      <div class="field">
+        <label class="fieldLabel" for="middleName">Middle Name:</label>
+        <input class="inp" type="text" id="middleName" autocomplete="additional-name" maxlength="60">
+      </div>
+      <div class="field">
+        <label class="fieldLabel req" for="birthdate">Birthdate:</label>
+        <input class="inp" type="date" id="birthdate" autocomplete="bday">
+        <div class="fieldError" id="err-birthdate"></div>
+      </div>
+      <div class="field">
+        <label class="fieldLabel req" for="gender">Gender:</label>
+        <select class="inp" id="gender">
+          <option value="" disabled selected>Select gender...</option>
+          <option value="Male">Male</option>
+          <option value="Female">Female</option>
+        </select>
+        <div class="fieldError" id="err-gender"></div>
+      </div>
+      <div class="field">
+        <label class="fieldLabel req" for="civilStatus">Civil Status:</label>
+        <select class="inp" id="civilStatus">
+          <option value="" disabled selected>Select civil status...</option>
+          <option value="Single">Single</option>
+          <option value="Married">Married</option>
+          <option value="Widowed">Widowed</option>
+          <option value="Separated">Separated</option>
+          <option value="Annulled">Annulled</option>
+        </select>
+        <div class="fieldError" id="err-civilStatus"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4 · ADDRESS & CONTACT -->
+  <section class="step" id="step4">
+    <div class="card">
+      <h3 class="sectionTitle">4 · Address</h3>
+      <div class="field">
+        <label class="fieldLabel req" for="barangay">Barangay:</label>
+        <input class="inp" type="text" id="barangay" maxlength="80">
+        <div class="fieldError" id="err-barangay"></div>
+      </div>
+      <div class="field">
+        <label class="fieldLabel req" for="municipality">Municipality/City:</label>
+        <input class="inp" type="text" id="municipality" maxlength="80">
+        <div class="fieldError" id="err-municipality"></div>
+      </div>
+      <div class="field">
+        <label class="fieldLabel req" for="province">Province:</label>
+        <input class="inp" type="text" id="province" value="Cagayan" maxlength="80">
+        <div class="fieldError" id="err-province"></div>
+      </div>
+    </div>
+    <div class="card">
+      <h3 class="sectionTitle">Contact Information</h3>
+      <div class="field">
+        <label class="fieldLabel req" for="contactNo">Contact No.:</label>
+        <input class="inp" type="tel" id="contactNo" placeholder="09XXXXXXXXX" autocomplete="tel" inputmode="tel" maxlength="20">
+        <div class="fieldError" id="err-contactNo"></div>
+      </div>
+      <div class="field">
+        <label class="fieldLabel req" for="email">Email:</label>
+        <input class="inp" type="email" id="email" placeholder="you@example.com" autocomplete="email" inputmode="email" maxlength="120">
+        <div class="fieldError" id="err-email"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5 · EMPLOYMENT PREFERENCES -->
+  <section class="step" id="step5">
+    <div class="card">
+      <h3 class="sectionTitle">5 · Jobseeker Classification &amp; Employment Preferences</h3>
+      <div class="field">
+        <span class="fieldLabel req">Are you a First-time Jobseeker?</span>
+        <div class="optGroup" id="firstTimeGroup">
+          <label class="optRow"><input type="radio" name="firstTime" value="Yes"><span>Yes</span></label>
+          <label class="optRow"><input type="radio" name="firstTime" value="No"><span>No</span></label>
+        </div>
+        <div class="fieldError" id="err-firstTime"></div>
+      </div>
+      <div class="field">
+        <span class="fieldLabel req">Employment Preference:</span>
+        <div class="optGroup" id="empPrefGroup">
+          <label class="optRow"><input type="checkbox" name="empPref" value="Local" id="prefLocal"><span>Local employment</span></label>
+          <label class="optRow"><input type="checkbox" name="empPref" value="Overseas" id="prefOverseas"><span>Overseas employment</span></label>
+        </div>
+        <div class="fieldError" id="err-empPref"></div>
+      </div>
+      <div class="field condBlock" id="localPositionsBlock">
+        <label class="fieldLabel" for="localPositions">Local Positions:<span class="recBadge" id="recLocal">Recommended</span></label>
+        <input class="inp" type="text" id="localPositions" placeholder="e.g. Store Crew, Encoder, Driver" maxlength="150">
+      </div>
+      <div class="field condBlock" id="overseasBlock">
+        <label class="fieldLabel" for="overseasOpportunities">Overseas Opportunities:<span class="recBadge" id="recOverseas">Recommended</span></label>
+        <input class="inp" type="text" id="overseasOpportunities" placeholder="e.g. Factory Worker, Caregiver, Seafarer" maxlength="150">
+      </div>
+      <div class="field">
+        <span class="fieldLabel">Returning OFW?</span>
+        <div class="optGroup" id="returningOfwGroup">
+          <label class="optRow"><input type="radio" name="returningOfw" value="Yes"><span>Yes</span></label>
+          <label class="optRow"><input type="radio" name="returningOfw" value="No"><span>No</span></label>
+        </div>
+      </div>
+      <div class="field">
+        <span class="fieldLabel">Returning Worker (previously employed locally and seeking work again)</span>
+        <div class="optGroup" id="returningWorkerGroup">
+          <label class="optRow"><input type="radio" name="returningWorker" value="Yes"><span>Yes</span></label>
+          <label class="optRow"><input type="radio" name="returningWorker" value="No"><span>No</span></label>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6 · EDUCATION -->
+  <section class="step" id="step6">
+    <div class="card">
+      <h3 class="sectionTitle">6 · Education</h3>
+      <div class="field">
+        <label class="fieldLabel req" for="education">What is your highest educational attainment?</label>
+        <select class="inp" id="education">
+          <option value="" disabled selected>Select attainment...</option>
+          <option value="No Formal Education">No Formal Education</option>
+          <option value="Elementary Level">Elementary Level</option>
+          <option value="Elementary Graduate">Elementary Graduate</option>
+          <option value="High School Level">High School Level</option>
+          <option value="High School Graduate">High School Graduate</option>
+          <option value="Senior High School Level">Senior High School Level</option>
+          <option value="Senior High School Graduate">Senior High School Graduate</option>
+          <option value="Vocational / Technical Course">Vocational / Technical Course</option>
+          <option value="College Level">College Level</option>
+          <option value="College Graduate">College Graduate</option>
+          <option value="Post Graduate Level">Post Graduate Level</option>
+          <option value="Post Graduate">Post Graduate</option>
+        </select>
+        <div class="fieldError" id="err-education"></div>
+      </div>
+      <div class="field">
+        <label class="fieldLabel" for="degreeCourse">What is the highest degree, course, program, or strand you have enrolled in or attended?</label>
+        <input class="inp" type="text" id="degreeCourse" placeholder="e.g. BS Information Technology, TVL-Home Economics" maxlength="150">
+      </div>
+    </div>
+  </section>
+
+  <!-- 7 · WORK EXPERIENCE AND SKILLS -->
+  <section class="step" id="step7">
+    <div class="card">
+      <h3 class="sectionTitle">7 · Work Experience and Skills</h3>
+      <p class="sectionHint">Optional, but employers use these to match you with vacancies.</p>
+      <div class="field">
+        <label class="fieldLabel" for="workExperience">What are your related work experiences?</label>
+        <textarea class="inp" id="workExperience" maxlength="600" placeholder="List jobs, OJT, internships, or freelance work (company, position, dates)"></textarea>
+      </div>
+      <div class="field">
+        <label class="fieldLabel" for="skillsCerts">What related skills, trainings, or certificates do you possess?</label>
+        <textarea class="inp" id="skillsCerts" maxlength="600" placeholder="e.g. NC II holder, computer literacy, driving, baking, sewing"></textarea>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8 · PESO ASSISTANCE PROGRAMS -->
+  <section class="step" id="step8">
+    <div class="card">
+      <h3 class="sectionTitle">8 · PESO Assistance Programs</h3>
+      <p class="sectionHint">Which additional PESO assistance programs would you like to enroll in?</p>
+      <div class="optGroup" id="pesoGroup">
+        <label class="optRow"><input type="checkbox" name="pesoPrograms" value="Job Referral and Placement"><span>Job Referral and Placement</span></label>
+        <label class="optRow"><input type="checkbox" name="pesoPrograms" value="Special Program for Employment of Students (SPES)"><span>Special Program for Employment of Students (SPES)</span></label>
+        <label class="optRow"><input type="checkbox" name="pesoPrograms" value="Government Internship Program (GIP)"><span>Government Internship Program (GIP)</span></label>
+        <label class="optRow"><input type="checkbox" name="pesoPrograms" value="JobStart Philippines Program"><span>JobStart Philippines Program</span></label>
+        <label class="optRow"><input type="checkbox" name="pesoPrograms" value="TESDA Skills Training / Scholarship"><span>TESDA Skills Training / Scholarship</span></label>
+        <label class="optRow"><input type="checkbox" name="pesoPrograms" value="Pre-Employment Counseling / Career Guidance"><span>Pre-Employment Counseling / Career Guidance</span></label>
+        <label class="optRow"><input type="checkbox" name="pesoPrograms" value="Livelihood / Self-Employment Assistance"><span>Livelihood / Self-Employment Assistance</span></label>
+        <label class="optRow"><input type="checkbox" name="pesoPrograms" value="None" id="pesoNone"><span>None for now</span></label>
+      </div>
+      <div class="field" style="margin-top:16px">
+        <span class="fieldLabel">Interested in Skills Training?</span>
+        <div class="optGroup" id="trainingGroup">
+          <label class="optRow"><input type="radio" name="skillsTraining" value="Yes"><span>Yes</span></label>
+          <label class="optRow"><input type="radio" name="skillsTraining" value="No"><span>No</span></label>
+        </div>
+      </div>
+      <div class="condBlock" id="trainingProgramBlock">
+        <div class="field" style="margin-top:14px;margin-bottom:0">
+          <label class="fieldLabel" for="trainingProgram">If yes, please indicate your preferred training program.</label>
+          <input class="inp" type="text" id="trainingProgram" placeholder="e.g. Cookery NC II, Welding, Barista" maxlength="150">
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 9 · DISABILITY INFORMATION -->
+  <section class="step" id="step9">
+    <div class="card">
+      <h3 class="sectionTitle">9 · Disability Information</h3>
+      <p class="sectionHint">This helps PESO provide appropriate assistance. Answering honestly will not disqualify you.</p>
+      <div class="field">
+        <span class="fieldLabel req">Do you have a disability?</span>
+        <div class="optGroup" id="disabilityGroup">
+          <label class="optRow"><input type="radio" name="disability" value="Yes"><span>Yes</span></label>
+          <label class="optRow"><input type="radio" name="disability" value="No"><span>No</span></label>
+        </div>
+        <div class="fieldError" id="err-disability"></div>
+      </div>
+      <div class="condBlock" id="pwdDetailsBlock">
+        <div class="field">
+          <label class="fieldLabel req" for="disabilityType">Type of Disability:</label>
+          <input class="inp" type="text" id="disabilityType" list="disabilityTypes" maxlength="100">
+          <datalist id="disabilityTypes">
+            <option value="Visual"></option>
+            <option value="Hearing"></option>
+            <option value="Speech"></option>
+            <option value="Physical / Orthopedic"></option>
+            <option value="Intellectual"></option>
+            <option value="Psychosocial"></option>
+            <option value="Learning"></option>
+          </datalist>
+          <div class="fieldError" id="err-disabilityType"></div>
+        </div>
+        <div class="field">
+          <label class="fieldLabel" for="pwdIdFile">Kindly upload a copy of your PWD ID. (optional)</label>
+          <input class="inp" type="file" id="pwdIdFile" accept=".jpg,.jpeg,.png,.pdf">
+          <div class="fileChip" id="pwdIdChip"><span id="pwdIdChipText"></span><button type="button" onclick="clearFile('pwdId')">Remove</button></div>
+          <div class="fieldError" id="err-pwdIdFile"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 10 · DOCUMENTS -->
+  <section class="step" id="step10">
+    <div class="card">
+      <h3 class="sectionTitle">10 · Documents</h3>
+      <p class="sectionHint">Kindly upload a copy of your resume. PDF, DOC, or DOCX up to 5 MB. Optional but strongly encouraged.</p>
+      <div class="field">
+        <input class="inp" type="file" id="resumeFile" accept=".pdf,.doc,.docx">
+        <div class="fileChip" id="resumeChip"><span id="resumeChipText"></span><button type="button" onclick="clearFile('resume')">Remove</button></div>
+        <div class="fieldError" id="err-resumeFile"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 11 · REVIEW AND SUBMIT -->
+  <section class="step" id="step11">
+    <div class="banner" id="submitBanner"></div>
+    <div class="card">
+      <h3 class="sectionTitle">11 · Review and Submit</h3>
+      <p class="sectionHint">Please check your information before submitting. Tap Edit to make changes.</p>
+      <div id="reviewList"></div>
+    </div>
+    <div class="navBtns">
+      <button type="button" id="submitBtn" style="flex:2">Submit Registration</button>
+    </div>
+  </section>
+
+</form>
+</main>
+
+<!-- SUCCESS -->
+<section id="successPanel" class="shell">
+  <div class="successIcon">
+    <svg width="30" height="30" viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </div>
+  <h2 class="successTitle">Registration Complete</h2>
+  <p class="successSub">Your applicant record has been created.</p>
+  <div class="refBox">
+    <div class="refBoxLabel">Reference</div>
+    <div class="refBoxValue" id="refNoOut"></div>
+  </div>
+  <p class="uidLine" id="uidOut"></p>
+  <div class="infoCard" id="successInfo"></div>
+  <p class="emailNote" id="emailNote"></p>
+  <button class="againBtn" onclick="window.location.reload()">Register Another Applicant</button>
+</section>
+
+<!-- DUPLICATE -->
+<section id="dupPanel" class="shell">
+  <div class="successIcon dupIcon">
+    <svg width="30" height="30" viewBox="0 0 24 24" fill="none"><path d="M12 3l9 16H3L12 3z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M12 10v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="17" r="1.1" fill="currentColor"/></svg>
+  </div>
+  <h2 class="successTitle">Already Registered</h2>
+  <p class="successSub" id="dupMessage">We found an existing registration with these details.</p>
+  <div class="refBox">
+    <div class="refBoxLabel">Your Reference ID</div>
+    <div class="refBoxValue" id="dupRefNoOut"></div>
+  </div>
+  <p class="uidLine" id="dupUidOut"></p>
+  <div class="infoCard">If this was not you, or if your details have changed, please approach the registration desk for assistance. Do not submit again with the same email address.</div>
+  <button class="againBtn" onclick="window.location.reload()">Go Back to Form</button>
+</section>
+
+<nav class="navBtns" id="navBar">
+  <button type="button" id="backBtn" style="visibility:hidden">Back</button>
+  <button type="button" id="nextBtn">Next</button>
+</nav>
+
+<script src="api.js"></script>
+<script>
+(function () {
+  var TOTAL_STEPS = 11;
+
+  var H = {
+    peso: 'Which additional PESO assistance programs would you like to enroll in?',
+    privacy: 'Data Subject Rights',
+    location: 'Location for Interview:',
+    firstTime: 'Are you a First-time Jobseeker?',
+    empPref: 'Employment Preference:',
+    last: 'Last Name:',
+    first: 'First Name:',
+    middle: 'Middle Name:',
+    birthdate: 'Birthdate:',
+    gender: 'Gender:',
+    civil: 'Civil Status:',
+    barangay: 'Barangay:',
+    muni: 'Municipality/City:',
+    province: 'Province:',
+    contact: 'Contact No.:',
+    email: 'Email:',
+    ofw: 'Returning OFW?',
+    worker: 'Returning Worker',
+    training: 'Interested in Skills Training?',
+    trainProg: 'If yes, please indicate your preferred training program.',
+    resume: 'Kindly upload a copy of your resume.',
+    disability: 'Do you have a disability?',
+    disType: 'Type of Disability:',
+    pwdId: 'Kindly upload a copy of your PWD ID.',
+    localPos: 'Local Positions:',
+    overseas: 'Overseas Opportunities:',
+    edu: 'What is your highest educational attainment?',
+    degree: 'What is the highest degree, course, program, or strand you have enrolled in or attended?',
+    experience: 'What are your related work experiences?',
+    skills: 'What related skills, trainings, or certificates do you possess?'
+  };
+
+  var $ = function (id) { return document.getElementById(id); };
+  var steps = [];
+  for (var i = 1; i <= TOTAL_STEPS; i++) steps.push($('step' + i));
+  var cur = 1;
+  var fileStore = { resume: null, pwdId: null };
+
+  var CFG = window.REGISTRATION_API.CONFIG;
+  var locSel = $('interviewLocation');
+  CFG.INTERVIEW_LOCATIONS.forEach(function (loc) {
+    var o = document.createElement('option');
+    o.value = loc; o.textContent = loc;
+    locSel.appendChild(o);
+  });
+  $('birthdate').max = new Date().toISOString().slice(0, 10);
+
+  function val(id) { return String($(id).value || '').trim(); }
+  function radioVal(name) {
+    var el = document.querySelector('input[name="' + name + '"]:checked');
+    return el ? el.value : '';
+  }
+  function checksVal(name) {
+    return Array.prototype.map.call(
+      document.querySelectorAll('input[name="' + name + '"]:checked'),
+      function (c) { return c.value; }
+    );
+  }
+
+  /* ── Navigation ── */
+  function showStep(n) {
+    steps.forEach(function (s, idx) { s.classList.toggle('active', idx === n - 1); });
+    cur = n;
+    var sec = steps[n - 1];
+    var titleEl = sec.querySelector('.sectionTitle');
+    var raw = titleEl ? titleEl.textContent.replace(/^\d+\s*·\s*/, '') : '';
+    $('pageIndicator').textContent = 'STEP ' + n + ' OF ' + TOTAL_STEPS;
+    $('stepTitle').textContent = raw;
+    $('progressBar').style.width = Math.round((n / TOTAL_STEPS) * 100) + '%';
+    updateStepper(n);
+    $('backBtn').style.visibility = n === 1 ? 'hidden' : 'visible';
+    $('nextBtn').style.display = n === TOTAL_STEPS ? 'none' : 'block';
+    if (n === TOTAL_STEPS) buildReview();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function updateStepper(n) {
+    var dots = document.querySelectorAll('#stepper .dot');
+    dots.forEach(function (d, i) {
+      d.classList.toggle('is-current', i === n - 1);
+      d.classList.toggle('is-done', i < n - 1);
+    });
+  }
+
+  $('backBtn').addEventListener('click', function () {
+    clearStepErrors(cur);
+    if (cur > 1) showStep(cur - 1);
+  });
+
+  $('nextBtn').addEventListener('click', function () {
+    var errs = validateStep(cur);
+    if (errs.length) { renderErrors(errs); return; }
+    clearStepErrors(cur);
+    showStep(cur + 1);
+  });
+
+  /* ── Validation ── */
+  function bad(el, msg) { return { el: el, msg: msg }; }
+  function fieldEl(id) { return $(id); }
+
+  function validateStep(n) {
+    var errs = [];
+    if (n === 1 && !$('privacyConsent').checked) {
+      errs.push(bad($('privacyConsent'), 'You must consent before you can register.'));
+    }
+    if (n === 2 && !val('interviewLocation')) {
+      errs.push(bad(fieldEl('interviewLocation'), 'Please select your interview location.'));
+    }
+    if (n === 3) {
+      if (!val('lastName')) errs.push(bad(fieldEl('lastName'), 'Please enter your last name.'));
+      if (!val('firstName')) errs.push(bad(fieldEl('firstName'), 'Please enter your first name.'));
+      var bd = val('birthdate');
+      if (!bd) errs.push(bad(fieldEl('birthdate'), 'Please enter your birthdate.'));
+      else if (new Date(bd) > new Date()) errs.push(bad(fieldEl('birthdate'), 'Birthdate cannot be in the future.'));
+      if (!val('gender')) errs.push(bad(fieldEl('gender'), 'Please select your gender.'));
+      if (!val('civilStatus')) errs.push(bad(fieldEl('civilStatus'), 'Please select your civil status.'));
+    }
+    if (n === 4) {
+      if (!val('barangay')) errs.push(bad(fieldEl('barangay'), 'Please enter your barangay.'));
+      if (!val('municipality')) errs.push(bad(fieldEl('municipality'), 'Please enter your municipality/city.'));
+      if (!val('province')) errs.push(bad(fieldEl('province'), 'Please enter your province.'));
+      if (!isValidPhone(val('contactNo'))) errs.push(bad(fieldEl('contactNo'), 'Please enter a valid contact number (e.g. 09123456789).'));
+      if (!isValidEmail(val('email'))) errs.push(bad(fieldEl('email'), 'Please enter a valid email address.'));
+    }
+    if (n === 5) {
+      if (!radioVal('firstTime')) errs.push(bad($('firstTimeGroup'), 'Please choose Yes or No.'));
+      if (!checksVal('empPref').length) errs.push(bad(document.querySelector('input[name="empPref"]').closest('.optGroup'), 'Select at least one employment preference.'));
+    }
+    if (n === 6 && !val('education')) {
+      errs.push(bad(fieldEl('education'), 'Please select your highest educational attainment.'));
+    }
+    if (n === 9) {
+      if (!radioVal('disability')) errs.push(bad($('disabilityGroup'), 'Please answer this question.'));
+      if (radioVal('disability') === 'Yes' && !val('disabilityType')) {
+        errs.push(bad(fieldEl('disabilityType'), 'Please indicate the type of disability.'));
+      }
+    }
+    return errs;
+  }
+
+  function isValidEmail(v) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v); }
+  function isValidPhone(v) {
+    if (!/^[0-9+\-\s()]{7,20}$/.test(v)) return false;
+    var digits = v.replace(/[^0-9]/g, '');
+    return digits.length >= 9 && digits.length <= 13;
+  }
+
+  function renderErrors(errs) {
+    errs.forEach(function (e) {
+      var target = (e.el.type === 'checkbox' || e.el.type === 'radio')
+        ? e.el.closest('.optGroup')
+        : e.el;
+      if (!target) target = e.el;
+      target.classList.add('invalid');
+      var errBox = findErrBox(e.el);
+      if (errBox) { errBox.textContent = e.msg; errBox.style.display = 'block'; }
+    });
+    var first = errs[0].el.closest('.card') || errs[0].el;
+    first.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    try { errs[0].el.focus({ preventScroll: true }); } catch (e) {}
+  }
+
+  function findErrBox(el) {
+    if (!el.name && !el.id) return null;
+    var key = el.name === 'empPref' ? 'empPref'
+      : el.name === 'firstTime' ? 'firstTime'
+      : el.name === 'disability' ? 'disability'
+      : el.id === 'privacyConsent' ? 'privacyConsent'
+      : el.id;
+    return $('err-' + key);
+  }
+
+  function clearStepErrors(n) {
+    var sec = steps[n - 1];
+    sec.querySelectorAll('.invalid').forEach(function (el) { el.classList.remove('invalid'); });
+    sec.querySelectorAll('.fieldError').forEach(function (el) { el.style.display = 'none'; });
+  }
+
+  /* ── Conditional logic (delegated at form level so dynamically loaded
+        choices from the Form Choices configuration work identically) ── */
+  function empPrefChecked(value) {
+    var el = document.querySelector('input[name="empPref"][value="' + value + '"]');
+    return !!(el && el.checked);
+  }
+
+  function updateConditionals() {
+    $('trainingProgramBlock').classList.toggle('on', radioVal('skillsTraining') === 'Yes');
+    $('pwdDetailsBlock').classList.toggle('on', radioVal('disability') === 'Yes');
+    var localOn = empPrefChecked('Local');
+    var overseasOn = empPrefChecked('Overseas');
+    $('localPositionsBlock').classList.toggle('on', localOn);
+    $('overseasBlock').classList.toggle('on', overseasOn);
+    $('recLocal').classList.toggle('on', localOn);
+    $('recOverseas').classList.toggle('on', overseasOn);
+  }
+
+  document.getElementById('regForm').addEventListener('change', function (e) {
+    var t = e.target;
+    if (!t.name) return;
+    if (t.name === 'skillsTraining' || t.name === 'disability' || t.name === 'empPref') {
+      updateConditionals();
+    }
+    if (t.name === 'pesoPrograms') {
+      // "None" exclusivity — value-based, independent of which programs exist
+      if (t.value === 'None' && t.checked) {
+        document.querySelectorAll('input[name="pesoPrograms"]').forEach(function (c) {
+          if (c.value !== 'None') c.checked = false;
+        });
+      } else if (t.checked) {
+        var noneOpt = document.querySelector('input[name="pesoPrograms"][value="None"]');
+        if (noneOpt) noneOpt.checked = false;
+      }
+    }
+  });
+
+  /* ── File uploads ── */
+  var FILE_RULES = {
+    resume: { extensions: ['pdf', 'doc', 'docx'], label: 'Resume must be a PDF, DOC, or DOCX file.' },
+    pwdId: { extensions: ['jpg', 'jpeg', 'png', 'pdf'], label: 'PWD ID must be a JPG, PNG, or PDF file.' }
+  };
+
+  ['resumeFile', 'pwdIdFile'].forEach(function (inputId) {
+    $(inputId).addEventListener('change', function () { handleFileChange(inputId.slice(0, -4), this); });
+  });
+
+  function handleFileChange(kind, input) {
+    var rule = FILE_RULES[kind];
+    var errBox = $('err-' + kind + 'File');
+    errBox.style.display = 'none';
+    var chip = $(kind + 'Chip');
+    var f = input.files[0];
+    if (!f) { fileStore[kind] = null; chip.classList.remove('on'); return; }
+    var ext = f.name.split('.').pop().toLowerCase();
+    if (rule.extensions.indexOf(ext) === -1) {
+      showFileError(errBox, rule.label);
+      input.value = ''; fileStore[kind] = null; chip.classList.remove('on');
+      return;
+    }
+    if (f.size > CFG.MAX_FILE_MB * 1024 * 1024) {
+      showFileError(errBox, 'File is too large. Maximum size is ' + CFG.MAX_FILE_MB + ' MB.');
+      input.value = ''; fileStore[kind] = null; chip.classList.remove('on');
+      return;
+    }
+    fileStore[kind] = f;
+    $(kind + 'ChipText').textContent = f.name + ' (' + formatSize(f.size) + ')';
+    chip.classList.add('on');
+  }
+
+  function showFileError(box, msg) { box.textContent = msg; box.style.display = 'block'; }
+  function formatSize(bytes) {
+    return bytes > 1024 * 1024 ? (bytes / 1048576).toFixed(1) + ' MB' : Math.round(bytes / 1024) + ' KB';
+  }
+  window.clearFile = function (kind) {
+    fileStore[kind] = null;
+    $(kind + 'File').value = '';
+    $(kind + 'Chip').classList.remove('on');
+  };
+
+  /* ── Collect fields → canonical sheet headers ── */
+  function collectFields() {
+    var f = {};
+    f[H.peso] = checksVal('pesoPrograms').join('; ');
+    f[H.privacy] = $('privacyConsent').checked ? 'Consented' : '';
+    f[H.location] = val('interviewLocation');
+    f[H.firstTime] = radioVal('firstTime');
+    f[H.empPref] = checksVal('empPref').join(', ');
+    f[H.last] = val('lastName');
+    f[H.first] = val('firstName');
+    f[H.middle] = val('middleName');
+    f[H.birthdate] = val('birthdate');
+    f[H.gender] = val('gender');
+    f[H.civil] = val('civilStatus');
+    f[H.barangay] = val('barangay');
+    f[H.muni] = val('municipality');
+    f[H.province] = val('province');
+    f[H.contact] = val('contactNo');
+    f[H.email] = val('email');
+    f[H.ofw] = radioVal('returningOfw');
+    f[H.worker] = radioVal('returningWorker');
+    f[H.training] = radioVal('skillsTraining');
+    f[H.trainProg] = radioVal('skillsTraining') === 'Yes' ? val('trainingProgram') : '';
+    f[H.disability] = radioVal('disability');
+    f[H.disType] = radioVal('disability') === 'Yes' ? val('disabilityType') : '';
+    f[H.localPos] = val('localPositions');
+    f[H.overseas] = val('overseasOpportunities');
+    f[H.edu] = val('education');
+    f[H.degree] = val('degreeCourse');
+    f[H.experience] = val('workExperience');
+    f[H.skills] = val('skillsCerts');
+    return f;
+  }
+
+  /* ── Review step ── */
+  function escapeHtml(str) {
+    var div = document.createElement('div');
+    div.textContent = str == null ? '' : String(str);
+    return div.innerHTML;
+  }
+
+  var REVIEW_ORDER = [
+    [H.location, 2], [H.last, 3], [H.first, 3], [H.middle, 3], [H.birthdate, 3],
+    [H.gender, 3], [H.civil, 3], [H.barangay, 4], [H.muni, 4], [H.province, 4],
+    [H.contact, 4], [H.email, 4], [H.firstTime, 5], [H.empPref, 5], [H.localPos, 5],
+    [H.overseas, 5], [H.ofw, 5], [H.worker, 5], [H.edu, 6], [H.degree, 6],
+    [H.experience, 7], [H.skills, 7], [H.peso, 8], [H.training, 8], [H.trainProg, 8],
+    [H.disability, 9], [H.disType, 9], [H.privacy, 1]
+  ];
+
+  function buildReview() {
+    var f = collectFields();
+    var html = '';
+    REVIEW_ORDER.forEach(function (pair) {
+      var v = f[pair[0]];
+      html += '<div class="reviewRow">'
+        + '<span class="reviewLabel">' + escapeHtml(pair[0]) + '</span>'
+        + '<span class="reviewValue">' + (v ? escapeHtml(v) : '<span class="reviewEmpty">—</span>') + '</span>'
+        + '<button type="button" class="editLink" data-step="' + pair[1] + '">Edit</button>'
+        + '</div>';
+    });
+    html += '<div class="reviewRow">'
+      + '<span class="reviewLabel">' + H.resume + '</span>'
+      + '<span class="reviewValue">' + (fileStore.resume ? escapeHtml(fileStore.resume.name) : '<span class="reviewEmpty">Not attached</span>') + '</span>'
+      + '<button type="button" class="editLink" data-step="10">Edit</button>'
+      + '</div>';
+    html += '<div class="reviewRow">'
+      + '<span class="reviewLabel">' + H.pwdId + '</span>'
+      + '<span class="reviewValue">' + (radioVal('disability') === 'Yes' ? (fileStore.pwdId ? escapeHtml(fileStore.pwdId.name) : '<span class="reviewEmpty">Not attached</span>') : '<span class="reviewEmpty">N/A</span>') + '</span>'
+      + '<button type="button" class="editLink" data-step="9">Edit</button>'
+      + '</div>';
+    $('reviewList').innerHTML = html;
+    $('reviewList').querySelectorAll('.editLink').forEach(function (btn) {
+      btn.addEventListener('click', function () { showStep(parseInt(btn.dataset.step, 10)); });
+    });
+  }
+
+  /* ── Submit ── */
+  var submitting = false;
+  $('submitBtn').addEventListener('click', function () {
+    if (submitting) return;
+    $('submitBanner').classList.remove('on');
+
+    for (var n = 1; n <= TOTAL_STEPS; n++) {
+      var errs = validateStep(n);
+      if (errs.length) {
+        showStep(n);
+        renderErrors(errs);
+        return;
+      }
+    }
+
+    submitting = true;
+    var btn = this;
+    btn.disabled = true;
+    btn.textContent = 'Submitting...';
+
+    var fields = collectFields();
+
+    window.REGISTRATION_API.submitApplicant(
+      fields,
+      { resume: fileStore.resume, pwdId: fileStore.pwdId },
+      { honeypot: val('website') }
+    )
+      .then(function (result) {
+        if (result.duplicate) {
+          showDuplicate(result, fields[H.email]);
+        } else {
+          showSuccess(result, fields);
+        }
+      })
+      .catch(function (err) {
+        console.error(err);
+        var banner = $('submitBanner');
+        banner.textContent = (err && err.userMessage)
+          ? err.userMessage
+          : 'We could not submit your registration. Please try again.';
+        banner.classList.add('on');
+        btn.disabled = false;
+        btn.textContent = 'Submit Registration';
+        submitting = false;
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+  });
+
+  function showSuccess(result, fields) {
+    $('formShell').style.display = 'none';
+    $('navBar').style.display = 'none';
+    $('headerRow').style.display = 'none';
+    $('progressWrap').style.display = 'none';
+    $('refNoOut').textContent = result.referenceNo || result.uniqueId;
+    $('uidOut').textContent = 'Unique ID: ' + result.uniqueId;
+    $('successInfo').innerHTML =
+      '<b>' + escapeHtml(fields[H.first]) + ' ' + escapeHtml(fields[H.last]) + '</b><br>'
+      + '<b>Interview location:</b> ' + escapeHtml(fields[H.location]) + '<br><br>'
+      + 'Please keep this reference ID and present it during check-in at the job fair. You may screenshot this screen.';
+    $('emailNote').textContent = result.emailSent
+      ? 'A confirmation email with your QR entry pass has been sent to ' + fields[H.email] + '.'
+      : 'No confirmation email has been sent yet. Please keep a copy of your reference ID.';
+    $('successPanel').style.display = 'block';
+    window.scrollTo({ top: 0 });
+  }
+
+  function showDuplicate(result, email) {
+    $('formShell').style.display = 'none';
+    $('navBar').style.display = 'none';
+    $('headerRow').style.display = 'none';
+    $('progressWrap').style.display = 'none';
+    $('dupUidOut').textContent = 'Registered to: ' + email;
+    $('dupRefNoOut').textContent = result.referenceNo || 'See registration desk';
+    $('dupPanel').style.display = 'block';
+    window.scrollTo({ top: 0 });
+  }
+
+  /* ── Managed choices (loaded live from the Form Choices configuration) ── */
+  function showConfigNote(msg) {
+    var el = $('configNote');
+    if (!el) return;
+    el.textContent = msg;
+    el.style.display = 'block';
+  }
+
+  function fillSelect(id, options) {
+    var sel = $(id);
+    if (!sel || !options || !options.length) return false;
+    var placeholder = sel.querySelector('option[value=""]');
+    sel.innerHTML = '';
+    if (placeholder) sel.appendChild(placeholder);
+    options.forEach(function (opt) {
+      var o = document.createElement('option');
+      o.value = opt.value; o.textContent = opt.label;
+      sel.appendChild(o);
+    });
+    return true;
+  }
+
+  function applyChoiceGroup(containerId, type, name, options, idForValue) {
+    var container = $(containerId);
+    if (!container || !options || !options.length) return false;
+    container.innerHTML = '';
+    options.forEach(function (opt) {
+      var lab = document.createElement('label');
+      lab.className = 'optRow';
+      var input = document.createElement('input');
+      input.type = type; input.name = name; input.value = opt.value;
+      var generatedId = idForValue ? idForValue(opt.value) : null;
+      if (generatedId) input.id = generatedId;
+      var span = document.createElement('span');
+      span.textContent = opt.label;
+      lab.appendChild(input); lab.appendChild(span);
+      container.appendChild(lab);
+    });
+    return true;
+  }
+
+  function applyFormChoices(choices) {
+    if (!choices) return 0;
+    var count = 0;
+    if (fillSelect('gender', choices.gender)) count++;
+    if (fillSelect('civilStatus', choices.civilStatus)) count++;
+    if (fillSelect('interviewLocation', choices.interviewLocation)) count++;
+    if (fillSelect('education', choices.education)) count++;
+    if (applyChoiceGroup('firstTimeGroup', 'radio', 'firstTime', choices.firstTime)) count++;
+    if (applyChoiceGroup('returningOfwGroup', 'radio', 'returningOfw', choices.returningOfw)) count++;
+    if (applyChoiceGroup('returningWorkerGroup', 'radio', 'returningWorker', choices.returningWorker)) count++;
+    if (applyChoiceGroup('trainingGroup', 'radio', 'skillsTraining', choices.skillsTraining)) count++;
+    if (applyChoiceGroup('disabilityGroup', 'radio', 'disability', choices.disability)) count++;
+    if (applyChoiceGroup('empPrefGroup', 'checkbox', 'empPref', choices.empPref)) count++;
+    // "None" keeps its element id so legacy references stay harmless
+    if (applyChoiceGroup('pesoGroup', 'checkbox', 'pesoPrograms', choices.pesoPrograms,
+        function (v) { return v === 'None' ? 'pesoNone' : null; })) count++;
+    updateConditionals();
+    return count;
+  }
+
+  function loadFormChoices() {
+    if (!window.REGISTRATION_API || typeof window.REGISTRATION_API.fetchFormChoices !== 'function') return;
+    window.REGISTRATION_API.fetchFormChoices(function (res) {
+      if (res && res.status === 'success' && res.choices) {
+        var applied = applyFormChoices(res.choices);
+        if (applied === 0) {
+          showConfigNote('Live configuration returned no options — using built-in defaults.');
+        } else if (res.degraded) {
+          showConfigNote('Live configuration is unavailable right now — using built-in defaults.');
+        }
+      } else {
+        showConfigNote('Could not load live form options — using built-in defaults. You can still register.');
+      }
+    });
+  }
+
+  updateConditionals();
+  updateStepper(1);
+  loadFormChoices();
+})();
+</script>
+</body>
+</html>

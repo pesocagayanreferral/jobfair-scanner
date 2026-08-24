@@ -4,150 +4,180 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Job Fair Check-In</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="design-system.css">
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+  /* Page accent — SCAN = YELLOW */
+  :root {
+    --accent: #E0A100;
+    --accent-dark: #B07C00;
+    --accent-soft: #FBF1D6;
+    --accent-contrast: #1A1206;
+  }
 
-* { box-sizing: border-box; }
+  body { text-align: center; padding-bottom: var(--s-7); }
 
-body {
-  font-family: 'Inter', Arial, sans-serif;
-  text-align: center;
-  margin: 0;
-  padding: 20px 16px;
-  background: #111111;
-  color: #f0f0f0;
-}
+  #headerRow {
+    display: flex; align-items: center; justify-content: space-between;
+    width: 100%; max-width: 520px; margin: 0 auto; padding: 0 var(--s-4);
+  }
+  #pageTitle { margin: 0; font-family: var(--font-display); font-size: 18px; font-weight: 700; letter-spacing: -0.02em; text-align: left; }
+  #pageIndicator {
+    font-family: var(--font-display); font-size: 11px; color: var(--accent-dark);
+    text-transform: uppercase; letter-spacing: 0.12em; font-weight: 700;
+    background: var(--accent-soft); padding: 5px 10px; border-radius: 999px;
+  }
 
-#headerRow {
-  display: flex; align-items: center; justify-content: space-between;
-  width: 100%; max-width: 400px; margin: 0 auto 20px;
-}
-#pageTitle { margin: 0; font-size: 18px; font-weight: 600; letter-spacing: -0.02em; text-align: left; }
-#pageIndicator { font-size: 11px; color: #555555; text-transform: uppercase; letter-spacing: 0.1em; font-family: monospace; }
+  /* Counter */
+  #counter {
+    margin: var(--s-4) auto; background: var(--surface); border: 1px solid var(--line);
+    border-radius: var(--r-lg); padding: 16px 12px; max-width: 520px;
+    display: flex; justify-content: space-around; align-items: center; box-shadow: var(--shadow-sm);
+  }
+  #counter > div { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  #counter span.label { color: var(--ink-faint); font-weight: 600; font-size: 11px; display: block; text-transform: uppercase; letter-spacing: 0.08em; }
+  #checkedInCount { font-family: var(--font-display); font-size: 30px; font-weight: 700; color: var(--ok); letter-spacing: -0.02em; display: block; line-height: 1; }
+  #hotsCount { font-family: var(--font-display); font-size: 30px; font-weight: 700; color: var(--accent-dark); letter-spacing: -0.02em; display: block; line-height: 1; }
+  #counterDivider { width: 1px; height: 38px; background: var(--line); flex-shrink: 0; }
 
-#counter {
-  margin: 0 auto 20px; background: #1a1a1a; border: 1px solid #252525; border-radius: 14px;
-  padding: 14px 12px; max-width: 400px; display: flex; justify-content: space-around; align-items: center;
-}
-#counter > div { display: flex; flex-direction: column; align-items: center; gap: 3px; }
-#counter span.label { color: #666666; font-weight: 400; font-size: 11px; display: block; text-transform: uppercase; letter-spacing: 0.08em; }
-#checkedInCount { font-size: 28px; font-weight: 700; color: #2ea44f; letter-spacing: -0.02em; display: block; line-height: 1; }
-#hotsCount { font-size: 28px; font-weight: 700; color: #e6a817; letter-spacing: -0.02em; display: block; line-height: 1; }
-#counterDivider { width: 1px; height: 36px; background: #2a2a2a; flex-shrink: 0; }
+  /* Scan buttons */
+  .scanBtn {
+    font-family: var(--font-body); font-size: 16px; font-weight: 600; padding: 17px 20px;
+    margin: 8px auto; display: flex; align-items: center; justify-content: center; gap: 12px;
+    width: 100%; max-width: 520px; color: var(--accent-contrast); border: 1px solid transparent;
+    border-radius: var(--r-md); cursor: pointer; letter-spacing: -0.01em;
+    transition: filter .15s ease, transform .1s ease; min-height: 56px;
+  }
+  .scanBtn:hover  { filter: brightness(1.04); }
+  .scanBtn:active { transform: scale(.98); }
+  .scanBtn svg { flex-shrink: 0; }
+  #startBtn { background: var(--accent); box-shadow: 0 6px 20px rgba(224,161,0,.28); }
+  #hotsBtn  { background: var(--surface); color: var(--ink); border-color: var(--line-strong); }
 
-.scanBtn {
-  font-family: 'Inter', Arial, sans-serif; font-size: 16px; font-weight: 600; padding: 16px 20px;
-  margin: 6px auto; display: block; width: 100%; max-width: 400px; color: #ffffff; border: none;
-  border-radius: 12px; cursor: pointer; letter-spacing: -0.01em; transition: filter 0.15s ease, transform 0.1s ease;
-}
-.scanBtn:hover  { filter: brightness(1.12); }
-.scanBtn:active { transform: scale(0.98); }
-#startBtn { background: #0b6efd; box-shadow: 0 4px 24px rgba(11, 110, 253, 0.25); }
-#hotsBtn  { background: #d4820a; box-shadow: 0 4px 24px rgba(212, 130, 10, 0.22); }
+  #backBtn {
+    font-family: var(--font-body); font-size: 13px; font-weight: 600; padding: 8px 14px;
+    display: none; background: var(--surface); color: var(--ink); border: 1px solid var(--line-strong);
+    border-radius: var(--r-sm); cursor: pointer; transition: background .15s ease;
+  }
+  #backBtn:hover { background: var(--surface-2); }
 
-#backBtn {
-  font-family: 'Inter', Arial, sans-serif; font-size: 14px; font-weight: 500; padding: 8px 16px;
-  display: none; background: #222222; color: #aaaaaa; border: 1px solid #333333; border-radius: 10px;
-  cursor: pointer; transition: background 0.15s ease, color 0.15s ease; margin: 0;
-}
-#backBtn:hover { background: #2a2a2a; color: #f0f0f0; }
+  #modeLabel {
+    font-size: 12.5px; color: var(--accent-dark); margin: var(--s-3) auto 0; display: none;
+    text-transform: uppercase; letter-spacing: 0.12em; font-weight: 700; max-width: 520px;
+    display: none;
+  }
 
-#modeLabel {
-  font-size: 12px; color: #aaaaaa; margin: 0 auto 12px; display: none;
-  text-transform: uppercase; letter-spacing: 0.1em; font-weight: 500; max-width: 400px;
-}
+  #reader { width: 100%; max-width: 520px; margin: var(--s-4) auto; border-radius: var(--r-lg); overflow: hidden; border: 1px solid var(--line); background: var(--surface-2); }
 
-#reader { width: 100%; max-width: 400px; margin: 0 auto 16px; border-radius: 18px; overflow: hidden; border: 1px solid #252525; }
+  /* Result states */
+  #result {
+    margin: var(--s-4) auto; padding: 22px 24px; border-radius: var(--r-lg); font-size: 18px; font-weight: 700;
+    min-height: 64px; display: none; border: 1px solid transparent; transition: background .25s ease, border-color .25s ease;
+    letter-spacing: -0.01em; max-width: 520px; width: 100%; text-align: center;
+  }
+  .res-state { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .res-icon { width: 46px; height: 46px; display: grid; place-items: center; border-radius: 50%; margin-bottom: 4px; }
+  .res-name { font-family: var(--font-display); font-size: 20px; font-weight: 700; letter-spacing: -0.02em; }
+  .res-detail { font-size: 15px; font-weight: 500; line-height: 1.45; }
 
-#result {
-  margin: 0 auto 16px; padding: 18px 24px; border-radius: 14px; font-size: 18px; font-weight: 700;
-  min-height: 60px; display: none; border: 1px solid transparent; transition: background 0.25s ease, border-color 0.25s ease;
-  letter-spacing: -0.01em; max-width: 400px; width: 100%;
-}
-.success   { background: #1e7e34; border-color: #2ea44f; color: #ffffff; }
-.duplicate { background: #7a5000; border-color: #b8860b; color: #ffffff; }
-.invalid   { background: #7a1020; border-color: #c0392b; color: #ffffff; }
-.idle      { background: #1c1c1c; border-color: #333333; color: #aaaaaa; }
+  .success   { background: var(--ok-soft); border-color: color-mix(in srgb, var(--ok) 35%, var(--line)); color: var(--ink); }
+  .success .res-icon { background: var(--ok); color: #fff; }
+  .duplicate { background: var(--warn-soft); border-color: color-mix(in srgb, var(--warn) 35%, var(--line)); color: var(--ink); }
+  .duplicate .res-icon { background: var(--warn); color: #fff; }
+  .invalid   { background: var(--danger-soft); border-color: color-mix(in srgb, var(--danger) 35%, var(--line)); color: var(--ink); }
+  .invalid .res-icon { background: var(--danger); color: #fff; }
+  .idle      { background: var(--surface-2); border-color: var(--line); color: var(--ink-soft); }
+  .idle .res-icon { background: var(--line-strong); color: #fff; }
 
-#errorMsg { color: #ff8080; margin: 10px auto 0; font-size: 13px; display: none; max-width: 400px; }
+  #errorMsg { color: var(--danger); margin: var(--s-3) auto 0; font-size: 13px; display: none; max-width: 520px; }
 
-/* ── Screen Flash Overlay ── */
-#screenFlash { position: fixed; inset: 0; pointer-events: none; opacity: 0; z-index: 999; }
-#screenFlash.flash { animation: screenPulse 1s ease-out forwards; }
-@keyframes screenPulse { 0% { opacity: 0.6; } 25% { opacity: 0.5; } 100% { opacity: 0; } }
+  /* Screen Flash Overlay */
+  #screenFlash { position: fixed; inset: 0; pointer-events: none; opacity: 0; z-index: 999; }
+  #screenFlash.flash { animation: screenPulse 1s ease-out forwards; }
+  @keyframes screenPulse { 0% { opacity: 0.55; } 25% { opacity: 0.45; } 100% { opacity: 0; } }
 
-/* ── Modals (Interview form + duplicate confirm) ── */
-.modalOverlay {
-  display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0,0,0,0.65); z-index: 1000;
-  align-items: center; justify-content: center; padding: 16px;
-}
-.modalCard {
-  width: 100%; max-width: 400px; background: #1a1a1a;
-  border: 1px solid #d4820a; border-radius: 16px; padding: 20px; text-align: left;
-  box-shadow: 0 12px 40px rgba(0,0,0,0.5);
-  max-height: 90vh; overflow-y: auto;
-}
-#hotsFormHeading, #dupConfirmHeading { font-size: 13px; color: #d4820a; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; margin-bottom: 4px; }
-#hotsFormName { font-size: 18px; font-weight: 700; margin-bottom: 12px; }
-#dupConfirmText { font-size: 15px; line-height: 1.6; margin: 10px 0 16px; color: #f0f0f0; }
-#priorHotsNotice {
-  display: none; background: #2a1f00; border: 1px solid #b8860b; border-radius: 10px;
-  padding: 10px 12px; font-size: 13px; color: #ffd485; margin-bottom: 12px; line-height: 1.5;
-}
-.hotsInput, .hotsSelect {
-  width: 100%; font-family: 'Inter', Arial, sans-serif; font-size: 15px; padding: 12px 14px;
-  background: #111111; border: 1px solid #333333; border-radius: 10px; color: #f0f0f0;
-  outline: none; margin-bottom: 10px; transition: border-color 0.15s ease;
-}
-.hotsInput::placeholder { color: #555555; }
-.hotsInput:focus, .hotsSelect:focus { border-color: #d4820a; }
-.hotsSelect { appearance: none; -webkit-appearance: none; cursor: pointer; }
-.fieldLabel { font-size: 11px; color: #888888; text-transform: uppercase; letter-spacing: 0.06em; margin: 0 0 4px 2px; }
-.modalButtons { display: flex; gap: 10px; margin-top: 4px; }
-.modalButtons button {
-  flex: 1; font-family: 'Inter', Arial, sans-serif; font-size: 15px; font-weight: 600;
-  padding: 12px; border: none; border-radius: 10px; cursor: pointer;
-}
-.modalButtons button:disabled { opacity: 0.5; cursor: not-allowed; }
-#hotsCancelBtn, #dupCancelBtn { background: #2a2a2a; color: #aaaaaa; }
-#hotsConfirmBtn, #dupYesBtn { background: #d4820a; color: #ffffff; }
+  /* Modals (Interview form + duplicate confirm) */
+  .modalOverlay {
+    display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(20,21,26,0.5); z-index: 1000;
+    align-items: center; justify-content: center; padding: 16px;
+  }
+  .modalCard {
+    width: 100%; max-width: 440px; background: var(--surface);
+    border: 1px solid var(--line); border-top: 4px solid var(--accent); border-radius: var(--r-lg);
+    padding: 22px; text-align: left; box-shadow: var(--shadow-md); max-height: 90vh; overflow-y: auto;
+  }
+  #hotsFormHeading, #dupConfirmHeading {
+    font-family: var(--font-display); font-size: 12px; color: var(--accent-dark); text-transform: uppercase;
+    letter-spacing: 0.1em; font-weight: 700; margin-bottom: 4px;
+  }
+  #hotsFormName { font-family: var(--font-display); font-size: 20px; font-weight: 700; margin-bottom: 14px; letter-spacing: -0.02em; }
+  #dupConfirmText { font-size: 15px; line-height: 1.6; margin: 10px 0 16px; color: var(--ink); }
+  #priorHotsNotice {
+    display: none; background: var(--warn-soft); border: 1px solid color-mix(in srgb, var(--warn) 35%, var(--line));
+    border-radius: var(--r-md); padding: 10px 12px; font-size: 13px; color: var(--ink); margin-bottom: 14px; line-height: 1.5;
+  }
+  .hotsInput, .hotsSelect {
+    width: 100%; font-family: var(--font-body); font-size: 15px; padding: 13px 14px;
+    background: var(--surface); border: 1px solid var(--line-strong); border-radius: var(--r-md); color: var(--ink);
+    outline: none; margin-bottom: 10px; transition: border-color .15s ease, box-shadow .15s ease;
+  }
+  .hotsInput::placeholder { color: var(--ink-faint); }
+  .hotsInput:focus, .hotsSelect:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+  .hotsSelect { appearance: none; -webkit-appearance: none; cursor: pointer;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238A8F9C' stroke-width='2' fill='none'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 14px center; padding-right: 38px; }
+  .fieldLabel { font-size: 11.5px; color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; margin: 0 0 5px 2px; }
+  .modalButtons { display: flex; gap: 10px; margin-top: 6px; }
+  .modalButtons button {
+    flex: 1; font-family: var(--font-body); font-size: 15px; font-weight: 600;
+    padding: 13px; border: none; border-radius: var(--r-md); cursor: pointer; min-height: var(--tap);
+  }
+  .modalButtons button:disabled { opacity: 0.5; cursor: not-allowed; }
+  #hotsCancelBtn, #dupCancelBtn { background: var(--surface); color: var(--ink); border: 1px solid var(--line-strong) !important; }
+  #hotsConfirmBtn, #dupYesBtn { background: var(--accent); color: var(--accent-contrast); }
 
-.autocompleteWrap { position: relative; }
-.suggestionBox {
-  display: none; position: absolute; top: 100%; left: 0; right: 0;
-  background: #111111; border: 1px solid #333333; border-radius: 10px;
-  max-height: 160px; overflow-y: auto; z-index: 1100; margin-top: -6px;
-}
-.suggestionItem { padding: 10px 14px; font-size: 14px; cursor: pointer; border-bottom: 1px solid #222222; }
-.suggestionItem:last-child { border-bottom: none; }
-.suggestionItem:hover { background: #d4820a; color: #111111; }
+  .autocompleteWrap { position: relative; }
+  .suggestionBox {
+    display: none; position: absolute; top: 100%; left: 0; right: 0;
+    background: var(--surface); border: 1px solid var(--line-strong); border-radius: var(--r-md);
+    max-height: 180px; overflow-y: auto; z-index: 1100; margin-top: -6px; box-shadow: var(--shadow-md);
+  }
+  .suggestionItem { padding: 11px 14px; font-size: 14px; cursor: pointer; border-bottom: 1px solid var(--line); }
+  .suggestionItem:last-child { border-bottom: none; }
+  .suggestionItem:hover { background: var(--accent-soft); color: var(--accent-dark); }
 
-/* ── Search + Registrant List ── */
-#listSection { max-width: 400px; margin: 24px auto 0; text-align: left; }
-#listHeading { font-size: 12px; color: #666666; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 500; margin: 0 0 8px 2px; }
-#searchInput {
-  width: 100%; font-family: 'Inter', Arial, sans-serif; font-size: 15px; padding: 12px 14px;
-  background: #1a1a1a; border: 1px solid #252525; border-radius: 12px; color: #f0f0f0;
-  outline: none; margin-bottom: 10px; transition: border-color 0.15s ease;
-}
-#searchInput::placeholder { color: #555555; }
-#searchInput:focus { border-color: #0b6efd; }
-#registrantList { background: #1a1a1a; border: 1px solid #252525; border-radius: 14px; max-height: 360px; overflow-y: auto; }
-.registrantRow { display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; border-bottom: 1px solid #232323; gap: 10px; }
-.registrantRow:last-child { border-bottom: none; }
-.registrantInfo { min-width: 0; }
-.registrantName { font-size: 14px; font-weight: 600; color: #f0f0f0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.registrantTime { font-size: 12px; color: #2ea44f; font-weight: 500; }
-.registrantStatusPending { font-size: 12px; color: #888888; font-weight: 500; }
-.rowActionBtn {
-  flex-shrink: 0; font-family: 'Inter', Arial, sans-serif; font-size: 12px; font-weight: 600;
-  padding: 8px 12px; border: none; border-radius: 8px; cursor: pointer; color: #ffffff;
-}
-.rowActionBtn:disabled { opacity: 0.5; cursor: not-allowed; }
-.checkInActionBtn { background: #0b6efd; }
-.hotsActionBtn { background: #d4820a; }
-.listEmpty { padding: 20px 14px; text-align: center; color: #555555; font-size: 13px; }
+  /* Search + Registrant List */
+  #listSection { max-width: 520px; margin: var(--s-6) auto 0; text-align: left; padding: 0 var(--s-4); }
+  #listHeading { font-size: 12px; color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700; margin: 0 0 10px 2px; }
+  #searchInput {
+    width: 100%; font-family: var(--font-body); font-size: 15px; padding: 13px 14px;
+    background: var(--surface); border: 1px solid var(--line-strong); border-radius: var(--r-md); color: var(--ink);
+    outline: none; margin-bottom: 12px; transition: border-color .15s ease, box-shadow .15s ease;
+  }
+  #searchInput::placeholder { color: var(--ink-faint); }
+  #searchInput:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+  #registrantList { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); max-height: 380px; overflow-y: auto; }
+  .registrantRow { display: flex; justify-content: space-between; align-items: center; padding: 13px 15px; border-bottom: 1px solid var(--line); gap: 10px; }
+  .registrantRow:last-child { border-bottom: none; }
+  .registrantInfo { min-width: 0; }
+  .registrantName { font-size: 15px; font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .registrantTime { font-size: 12.5px; color: var(--ok); font-weight: 600; }
+  .registrantStatusPending { font-size: 12.5px; color: var(--ink-faint); font-weight: 500; }
+  .rowActionBtn {
+    flex-shrink: 0; font-family: var(--font-body); font-size: 12.5px; font-weight: 600;
+    padding: 9px 13px; border: none; border-radius: var(--r-sm); cursor: pointer; color: #fff; min-height: 38px;
+  }
+  .rowActionBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .checkInActionBtn { background: var(--accent); color: var(--accent-contrast); }
+  .hotsActionBtn { background: var(--accent-dark); }
+  .listEmpty { padding: 22px 14px; text-align: center; color: var(--ink-faint); font-size: 13.5px; }
+
+  @media (min-width: 768px) {
+    #counter, .scanBtn, #result, #reader, #listSection { max-width: 560px; }
+  }
 </style>
 </head>
 <body>
@@ -156,7 +186,7 @@ body {
 
   <div id="headerRow">
     <h2 id="pageTitle">Job Fair Check-In</h2>
-    <button id="backBtn" onclick="stopScanner()">⬅ Back</button>
+    <button id="backBtn" onclick="stopScanner()">Back</button>
     <span id="pageIndicator">HOME</span>
   </div>
 
@@ -166,12 +196,18 @@ body {
     <div><span id="hotsCount">0</span><span class="label">HOTS</span></div>
   </div>
 
-  <button id="startBtn" class="scanBtn" onclick="startScanner('checkin')">📷 Scan to Register Jobseeker</button>
-  <button id="hotsBtn"  class="scanBtn" onclick="startScanner('hots')">⭐ Scan to Record Interview Result</button>
+  <button id="startBtn" class="scanBtn" onclick="startScanner('checkin')">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M3 7V4h3M21 7V4h-3M3 17v3h3M21 17v3h-3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M4 12h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><rect x="8" y="8" width="8" height="8" rx="1.5" stroke="currentColor" stroke-width="2"/></svg>
+    Scan to Register Jobseeker
+  </button>
+  <button id="hotsBtn"  class="scanBtn" onclick="startScanner('hots')">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M12 3l2.4 5 5.6.8-4 4 1 5.6L12 16l-5 3 1-5.6-4-4 5.6-.8L12 3z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+    Scan to Record Interview Result
+  </button>
 
   <div id="modeLabel"></div>
   <div id="reader"></div>
-  <div id="result" class="idle">Point camera at QR code</div>
+  <div id="result" class="idle" aria-live="polite">Point camera at QR code</div>
 
   <div id="hotsFormOverlay" class="modalOverlay">
     <div id="hotsForm" class="modalCard">
@@ -209,7 +245,7 @@ body {
 
   <div id="dupConfirmOverlay" class="modalOverlay">
     <div id="dupConfirmCard" class="modalCard">
-      <div id="dupConfirmHeading">⚠️ Confirm Additional Interview Record</div>
+      <div id="dupConfirmHeading">Confirm Additional Interview Record</div>
       <div id="dupConfirmText"></div>
       <div class="modalButtons">
         <button id="dupCancelBtn" onclick="confirmDupNo()">Go Back</button>
@@ -268,6 +304,18 @@ body {
       screenFlash.classList.remove('flash');
       void screenFlash.offsetWidth;
       screenFlash.classList.add('flash');
+    }
+
+    function statusIcon(type) {
+      if (type === 'success') return '<svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+      if (type === 'duplicate') return '<svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M12 3l9 16H3L12 3z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M12 10v4" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><circle cx="12" cy="17" r="1.2" fill="currentColor"/></svg>';
+      if (type === 'invalid') return '<svg width="26" height="26" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/><path d="M9 9l6 6M15 9l-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+      return '<svg width="26" height="26" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/><path d="M12 7v6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><circle cx="12" cy="16.5" r="1.1" fill="currentColor"/></svg>';
+    }
+    function resState(type, name, detail) {
+      return '<div class="res-state"><span class="res-icon">' + statusIcon(type) + '</span>'
+        + (name ? '<div class="res-name">' + name + '</div>' : '')
+        + (detail ? '<div class="res-detail">' + detail + '</div>' : '') + '</div>';
     }
 
     function jsonpGet(params, onDone) {
@@ -329,10 +377,10 @@ body {
       registrantList.innerHTML = items.map(item => {
         const safeName = escapeHtml(item.name);
         const infoHtml = item.status === 'Checked In'
-          ? '<span class="registrantName">' + safeName + '</span><br><span class="registrantTime">✓ ' + escapeHtml(item.time) + '</span>'
+          ? '<span class="registrantName">' + safeName + '</span><br><span class="registrantTime">Checked in · ' + escapeHtml(item.time) + '</span>'
           : '<span class="registrantName">' + safeName + '</span><br><span class="registrantStatusPending">Not checked in</span>';
         const actionHtml = item.status === 'Checked In'
-          ? '<button class="rowActionBtn hotsActionBtn" onclick="manualHots(\'' + item.id + '\', this)">⭐ Interview</button>'
+          ? '<button class="rowActionBtn hotsActionBtn" onclick="manualHots(\'' + item.id + '\', this)">Interview</button>'
           : '<button class="rowActionBtn checkInActionBtn" onclick="manualCheckIn(\'' + item.id + '\', this)">Check In</button>';
         return '<div class="registrantRow"><div class="registrantInfo">' + infoHtml + '</div>' + actionHtml + '</div>';
       }).join('');
@@ -394,8 +442,8 @@ body {
       counterDivider.style.display = 'none';
 
       modeLabel.style.display = 'block';
-      modeLabel.textContent   = mode === 'hots' ? '⭐ Recording Interview Result' : '📷 Registering Jobseeker';
-      modeLabel.style.color   = mode === 'hots' ? '#d4820a' : '#0b6efd';
+      modeLabel.textContent   = mode === 'hots' ? 'Recording Interview Result' : 'Registering Jobseeker';
+      modeLabel.style.color   = '#B07C00';
 
       html5QrCode = new Html5Qrcode("reader");
       html5QrCode.start(
@@ -458,7 +506,7 @@ body {
       if (isProcessing) return;
       isProcessing = true;
       resultDiv.className   = 'idle';
-      resultDiv.textContent = 'Checking...';
+      resultDiv.innerHTML = resState('idle', '', 'Checking...');
 
       if (currentMode === 'hots') {
         jsonpGet({ action: 'hots_info', id: decodedText }, (res) => handleHotsInfo(decodedText, res));
@@ -478,7 +526,7 @@ body {
           resultDiv.style.display = 'none';
         } else {
           resultDiv.className   = 'idle';
-          resultDiv.textContent = 'Point camera at QR code';
+          resultDiv.innerHTML = resState('idle', '', 'Point camera at QR code');
         }
       }, 2500);
     }
@@ -506,7 +554,7 @@ body {
       const notice = document.getElementById('priorHotsNotice');
       if (pendingPriorCount > 0) {
         notice.style.display = 'block';
-        notice.innerHTML = '⚠️ Already has ' + pendingPriorCount + ' interview record(s):<br>' +
+        notice.innerHTML = 'Already has ' + pendingPriorCount + ' interview record(s):<br>' +
           priorRecords.map(r => '• ' + escapeHtml(r.company) + ' — ' + escapeHtml(r.position) + ' <i>(' + escapeHtml(r.interviewStatus) + ')</i>').join('<br>');
       } else {
         notice.style.display = 'none';
@@ -547,7 +595,7 @@ body {
 
       const matches = pool.filter(v => v.position.toLowerCase().includes(term)).slice(0, 8);
       renderSuggestionBox(box, matches.map(v => ({
-        label: escapeHtml(v.position) + (scoped ? '' : ' <span style="color:#888;font-size:12px">— ' + escapeHtml(v.company) + '</span>'),
+        label: escapeHtml(v.position) + (scoped ? '' : ' <span style="color:var(--ink-faint);font-size:12px">— ' + escapeHtml(v.company) + '</span>'),
         value: v.position
       })), selectPosition);
     }
@@ -573,7 +621,7 @@ body {
       pendingHotsId = null;
       isProcessing = false;
       resultDiv.className   = 'idle';
-      resultDiv.textContent = 'Point camera at QR code';
+      resultDiv.innerHTML = resState('idle', '', 'Point camera at QR code');
     }
 
     function confirmHotsForm() {
@@ -636,33 +684,33 @@ body {
 
       if (res.status === 'success') {
         if (navigator.vibrate) navigator.vibrate(200);
-        flashScreen('rgba(30, 126, 52, 0.5)');
+        flashScreen('rgba(31, 122, 69, 0.5)');
         resultDiv.className = 'success';
         if (res.interviewStatus) {
-          resultDiv.innerHTML = '✅<br>' + res.name + '<br><span style="font-size:15px">' + res.interviewStatus + ' — ' + res.company + ' (' + res.position + ')</span><br><span style="font-size:12px;color:#ccc">' + res.time + '</span>';
+          resultDiv.innerHTML = resState('success', name, res.interviewStatus + ' — ' + res.company + ' (' + res.position + ')<br><span style="font-size:12.5px;color:var(--ink-soft)">' + res.time + '</span>');
         } else {
-          resultDiv.innerHTML = '✅<br>' + res.name + '<br><span style="font-size:15px">Checked In — ' + res.time + '</span>';
+          resultDiv.innerHTML = resState('success', name, 'Checked In — ' + res.time);
         }
       } else if (res.status === 'duplicate') {
         if (navigator.vibrate) navigator.vibrate([100, 100, 100]);
-        flashScreen('rgba(184, 134, 11, 0.5)');
+        flashScreen('rgba(176,124,0,0.45)');
         resultDiv.className = 'duplicate';
-        resultDiv.innerHTML = '⚠️<br>' + name + '<br><span style="font-size:15px">Already recorded — ' + time + '</span>';
+        resultDiv.innerHTML = resState('duplicate', name, 'Already checked in — ' + time);
       } else if (res.status === 'not_checked_in') {
         if (navigator.vibrate) navigator.vibrate([150, 100, 150, 100, 150]);
-        flashScreen('rgba(167, 29, 42, 0.5)');
+        flashScreen('rgba(180,35,28,0.45)');
         resultDiv.className = 'invalid';
-        resultDiv.innerHTML = '🚫<br>' + name + '<br><span style="font-size:15px">Not checked in yet — send to Check-In first</span>';
+        resultDiv.innerHTML = resState('invalid', name, 'Not checked in yet — send to Check-In first');
       } else if (res.status === 'error') {
         if (navigator.vibrate) navigator.vibrate(500);
-        flashScreen('rgba(167, 29, 42, 0.5)');
+        flashScreen('rgba(180,35,28,0.45)');
         resultDiv.className = 'invalid';
-        resultDiv.innerHTML = '⚠️ System Error<br><span style="font-size:14px">' + escapeHtml(res.message) + '</span>';
+        resultDiv.innerHTML = resState('invalid', 'System Error', escapeHtml(res.message));
       } else {
         if (navigator.vibrate) navigator.vibrate(500);
-        flashScreen('rgba(167, 29, 42, 0.5)');
+        flashScreen('rgba(180,35,28,0.45)');
         resultDiv.className = 'invalid';
-        resultDiv.innerHTML = '❌<br>Invalid Ticket';
+        resultDiv.innerHTML = resState('invalid', 'Invalid Ticket', 'No matching registration was found.');
       }
     }
   </script>

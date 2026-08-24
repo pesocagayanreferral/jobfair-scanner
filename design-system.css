@@ -1,0 +1,350 @@
+/* ====================================================================
+ * JOB FAIR DIGITAL SYSTEM — Shared Design System
+ * --------------------------------------------------------------------
+ * One system, three operational interfaces:
+ *   REGISTER (blue) · TICKET (orange) · SCAN (yellow)
+ *
+ * Why a shared file? The three pages must visibly belong to one product.
+ * Extracting the tokens + primitives here guarantees identical typography,
+ * spacing, controls, focus treatment and accessible behaviour across all
+ * three, while each page only overrides the --accent* variables.
+ *
+ * All class names referenced by the existing JavaScript are preserved.
+ * ==================================================================== */
+
+/* ---------- Design tokens ---------- */
+:root {
+  /* Shared neutrals — warm editorial paper, near-black ink */
+  --ink: #14151A;
+  --ink-soft: #565A66;
+  --ink-faint: #8A8F9C;
+  --paper: #FBFAF7;
+  --surface: #FFFFFF;
+  --surface-2: #F3F1EB;
+  --line: #E6E3DB;
+  --line-strong: #C9C5BA;
+
+  /* Accent — overridden per page (blue / orange / yellow) */
+  --accent: #1A56DB;
+  --accent-dark: #143FA0;
+  --accent-soft: #EAEFFB;
+  --accent-contrast: #FFFFFF;
+
+  /* Functional status (shared, never the accent) */
+  --ok: #1F7A45;
+  --ok-soft: #E5F1EA;
+  --warn: #9A5B00;
+  --warn-soft: #FBEFDD;
+  --danger: #B4231C;
+  --danger-soft: #FBEAE8;
+
+  /* Typography */
+  --font-display: 'Space Grotesk', 'Inter', system-ui, -apple-system, sans-serif;
+  --font-body: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  /* Spacing scale (mobile-first) */
+  --s-1: 4px;  --s-2: 8px;  --s-3: 12px; --s-4: 16px;
+  --s-5: 24px; --s-6: 32px; --s-7: 48px; --s-8: 64px;
+
+  /* Geometry — restrained, editorial */
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 16px;
+
+  /* Restrained elevation */
+  --shadow-sm: 0 1px 2px rgba(20,21,26,.05), 0 1px 3px rgba(20,21,26,.05);
+  --shadow-md: 0 2px 8px rgba(20,21,26,.05), 0 10px 28px rgba(20,21,26,.05);
+
+  --maxw: 460px;
+  --tap: 44px;
+}
+
+/* ---------- Reset / base ---------- */
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.55;
+  color: var(--ink);
+  background: var(--paper);
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 700; letter-spacing: -0.02em; margin: 0; }
+p { margin: 0; }
+img { max-width: 100%; }
+
+/* Accessible focus — uses the page accent */
+:focus { outline: none; }
+:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--r-sm);
+}
+.inp:focus-visible, .hotsInput:focus-visible, .hotsSelect:focus-visible,
+#searchInput:focus-visible, #email:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+/* ---------- Brand bar (shared identity) ---------- */
+.brandbar {
+  display: flex; align-items: center; gap: 12px;
+  max-width: var(--maxw); margin: 0 auto;
+  padding: var(--s-4) var(--s-4) var(--s-3);
+  width: 100%;
+}
+.brandbar__mark {
+  width: 30px; height: 30px; flex-shrink: 0;
+  border-radius: 7px; background: var(--accent);
+  display: grid; place-items: center;
+  box-shadow: var(--shadow-sm);
+}
+.brandbar__mark svg { display: block; }
+.brandbar__text { display: flex; flex-direction: column; line-height: 1.05; }
+.brandbar__title {
+  font-family: var(--font-display); font-weight: 700; font-size: 14px;
+  letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink);
+}
+.brandbar__sub {
+  font-size: 10.5px; letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--ink-faint); font-weight: 600;
+}
+
+/* ---------- Layout container ---------- */
+.shell {
+  max-width: var(--maxw); margin: 0 auto;
+  padding: 0 var(--s-4) var(--s-7);
+  width: 100%;
+}
+
+/* ---------- Buttons ---------- */
+.btn {
+  font-family: var(--font-body); font-size: 15px; font-weight: 600;
+  letter-spacing: -0.01em; line-height: 1;
+  padding: 15px 18px; min-height: var(--tap);
+  border: 1px solid transparent; border-radius: var(--r-md);
+  cursor: pointer; display: inline-flex; align-items: center;
+  justify-content: center; gap: 9px;
+  transition: background .15s ease, filter .15s ease, transform .08s ease, border-color .15s ease;
+  text-decoration: none;
+}
+.btn:hover { filter: brightness(1.04); }
+.btn:active { transform: scale(.985); }
+.btn[disabled] { opacity: .55; cursor: wait; }
+.btn--primary { background: var(--accent); color: var(--accent-contrast); }
+.btn--primary:hover { background: var(--accent-dark); filter: none; }
+.btn--ghost {
+  background: var(--surface); color: var(--ink);
+  border-color: var(--line-strong);
+}
+.btn--ghost:hover { background: var(--surface-2); filter: none; }
+.btn--block { width: 100%; }
+.btn--lg { padding: 17px 20px; font-size: 16px; }
+
+/* ---------- Form fields ---------- */
+.field { margin-bottom: var(--s-4); }
+.field:last-child { margin-bottom: 0; }
+
+.fieldLabel, .field__label {
+  display: block; text-align: left; font-size: 12px; font-weight: 600;
+  color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.06em;
+  margin: 0 0 6px 2px;
+}
+/* Required: accent asterisk + we also surface a "Required" word via .req-note */
+.fieldLabel.req::after,
+.field__label.req::after { content: " *"; color: var(--accent); font-weight: 700; }
+
+.inp {
+  width: 100%; font-family: var(--font-body); font-size: 16px;
+  padding: 13px 14px; background: var(--surface);
+  border: 1px solid var(--line-strong); border-radius: var(--r-md);
+  color: var(--ink); outline: none;
+  transition: border-color .15s ease, box-shadow .15s ease;
+  appearance: none; -webkit-appearance: none;
+}
+.inp::placeholder { color: var(--ink-faint); }
+.inp:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+textarea.inp { resize: vertical; min-height: 92px; line-height: 1.5; }
+input[type="date"].inp { min-height: 50px; }
+input[type="file"].inp { padding: 10px; cursor: pointer; font-size: 14px; }
+.inp.invalid, .optGroup.invalid, .optgroup.invalid { border-color: var(--danger) !important; }
+.inp.invalid { box-shadow: 0 0 0 3px var(--danger-soft); }
+
+select.inp {
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238A8F9C' stroke-width='2' fill='none'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 14px center;
+  padding-right: 38px; cursor: pointer;
+}
+
+.fieldError {
+  display: none; color: var(--danger); font-size: 13px;
+  margin-top: 6px; margin-left: 2px; font-weight: 500;
+}
+
+/* Option groups — radio / checkbox rows */
+.optGroup, .optgroup {
+  border: 1px solid var(--line-strong); border-radius: var(--r-md);
+  overflow: hidden; background: var(--surface);
+}
+.optRow {
+  display: flex; align-items: center; gap: 11px; padding: 13px 14px;
+  font-size: 15px; cursor: pointer; border-bottom: 1px solid var(--line);
+  color: var(--ink);
+}
+.optRow:last-child { border-bottom: none; }
+.optRow:hover { background: var(--surface-2); }
+.optRow input { width: 19px; height: 19px; accent-color: var(--accent); flex-shrink: 0; cursor: pointer; }
+
+/* Recommended badge — visually distinct from required asterisk */
+.recBadge {
+  display: inline-block; font-size: 10px; font-weight: 700;
+  color: var(--accent-dark); background: var(--accent-soft);
+  border: 1px solid var(--accent); border-radius: 999px;
+  padding: 2px 8px; margin-left: 8px; text-transform: uppercase;
+  letter-spacing: 0.06em; vertical-align: middle; visibility: hidden;
+}
+.recBadge.on { visibility: visible; }
+
+.condBlock { display: none; margin-top: 2px; }
+.condBlock.on { display: block; animation: jfFade .2s ease; }
+
+.req-note { font-size: 11px; color: var(--ink-faint); margin: 2px 0 0 2px; letter-spacing: .02em; }
+
+/* Informational boxes */
+.hintBox {
+  background: var(--accent-soft); border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--line));
+  border-radius: var(--r-md); padding: 13px 15px; font-size: 13.5px;
+  color: var(--ink); line-height: 1.6; margin-bottom: var(--s-4); text-align: left;
+}
+.warnBox {
+  background: var(--warn-soft); border: 1px solid color-mix(in srgb, var(--warn) 35%, var(--line));
+  border-radius: var(--r-md); padding: 13px 15px; font-size: 13.5px;
+  color: var(--ink); line-height: 1.6; margin-bottom: var(--s-4); text-align: left;
+}
+
+/* File chip */
+.fileChip {
+  display: none; align-items: center; justify-content: space-between; gap: 10px;
+  background: var(--ok-soft); border: 1px solid color-mix(in srgb, var(--ok) 40%, var(--line));
+  border-radius: var(--r-md); padding: 10px 12px; font-size: 13px;
+  margin-top: 8px; word-break: break-all; color: var(--ink);
+}
+.fileChip.on { display: flex; }
+.fileChip button {
+  flex-shrink: 0; background: var(--surface); color: var(--ink-soft);
+  border: 1px solid var(--line-strong); border-radius: var(--r-sm);
+  padding: 6px 11px; font-family: inherit; font-size: 12px; cursor: pointer;
+}
+
+/* ---------- Cards / panels ---------- */
+.card {
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: var(--r-lg); padding: var(--s-5) var(--s-4);
+  margin-bottom: var(--s-4); text-align: left; box-shadow: var(--shadow-sm);
+}
+.sectionTitle {
+  font-family: var(--font-display); font-size: 13px; font-weight: 700;
+  color: var(--accent-dark); text-transform: uppercase; letter-spacing: 0.08em;
+  margin: 0 0 4px;
+}
+.sectionHint { font-size: 14px; color: var(--ink-soft); line-height: 1.55; margin: 0 0 var(--s-4); }
+
+/* ---------- Banner (error) ---------- */
+.banner {
+  display: none; background: var(--danger-soft); border: 1px solid color-mix(in srgb, var(--danger) 40%, var(--line));
+  border-radius: var(--r-md); padding: 13px 15px; font-size: 14px; line-height: 1.5;
+  margin-bottom: var(--s-4); text-align: left; color: var(--ink);
+}
+.banner.on { display: block; }
+
+/* ---------- Review list ---------- */
+.reviewRow {
+  display: flex; justify-content: space-between; gap: 14px; align-items: baseline;
+  padding: 12px 0; border-bottom: 1px solid var(--line); font-size: 14px;
+}
+.reviewRow:last-child { border-bottom: none; }
+.reviewLabel {
+  color: var(--ink-soft); font-size: 11.5px; text-transform: uppercase;
+  letter-spacing: 0.04em; flex-shrink: 0; max-width: 46%; line-height: 1.4;
+}
+.reviewValue { text-align: right; word-break: break-word; color: var(--ink); }
+.reviewEmpty { color: var(--ink-faint); }
+.editLink {
+  background: none; border: none; color: var(--accent); font-family: inherit;
+  font-size: 12.5px; font-weight: 600; cursor: pointer; padding: 0 0 0 10px;
+  text-decoration: none; white-space: nowrap;
+}
+.editLink:hover { text-decoration: underline; }
+
+/* ---------- Success / duplicate panels ---------- */
+.successPanel, #successPanel, #dupPanel { display: none; text-align: center; }
+#successPanel.on, #dupPanel.on { display: block; }
+.successIcon {
+  width: 64px; height: 64px; margin: 4px auto 12px; display: grid; place-items: center;
+  border-radius: 50%; background: var(--ok-soft); color: var(--ok);
+}
+.successIcon.dupIcon { background: var(--warn-soft); color: var(--warn); }
+.successTitle { font-size: 23px; font-weight: 700; letter-spacing: -0.02em; margin: 0 0 6px; }
+.successSub { color: var(--ink-soft); font-size: 14.5px; margin: 0 0 var(--s-5); }
+.refBox {
+  background: var(--accent-soft); border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--line));
+  border-radius: var(--r-lg); padding: 18px 16px; margin-bottom: var(--s-4);
+}
+.refBoxLabel { font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--accent-dark); margin-bottom: 8px; font-weight: 700; }
+.refBoxValue { font-family: 'Space Grotesk', monospace; font-size: 22px; font-weight: 700; color: var(--ink); word-break: break-all; letter-spacing: 0.01em; }
+.uidLine { font-family: monospace; font-size: 12px; color: var(--ink-faint); word-break: break-all; margin: 0 0 var(--s-4); }
+.infoCard {
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg);
+  padding: 16px; text-align: left; font-size: 14px; line-height: 1.65; color: var(--ink-soft); margin-bottom: var(--s-4);
+}
+.infoCard b { color: var(--ink); }
+.emailNote { font-size: 13.5px; color: var(--accent-dark); line-height: 1.5; margin: 0 0 var(--s-4); }
+.againBtn {
+  width: 100%; padding: 15px; font-size: 15px; font-weight: 600; color: var(--accent-contrast);
+  background: var(--accent); border: none; border-radius: var(--r-md); cursor: pointer; font-family: inherit;
+}
+.againBtn:hover { background: var(--accent-dark); }
+
+/* ---------- Progress bar (compact / mobile) ---------- */
+.progressWrap {
+  max-width: var(--maxw); margin: 0 auto var(--s-5); height: 5px;
+  background: var(--surface-2); border-radius: 999px; overflow: hidden;
+}
+.progressBar { height: 100%; width: 9%; background: var(--accent); border-radius: 999px; transition: width .25s ease; }
+
+/* ---------- Step indicator (mobile compact) ---------- */
+.stepIndicator {
+  max-width: var(--maxw); margin: 0 auto var(--s-4);
+  display: flex; align-items: baseline; gap: 8px;
+}
+.stepIndicator__count {
+  font-family: var(--font-display); font-weight: 700; font-size: 13px;
+  letter-spacing: 0.06em; color: var(--ink); text-transform: uppercase;
+}
+.stepIndicator__title { font-size: 13px; color: var(--ink-soft); font-weight: 500; }
+
+/* ---------- Motion ---------- */
+@keyframes jfFade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.step { display: none; }
+.step.active { display: block; animation: jfFade .22s ease; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}
+
+/* ---------- Tablet / desktop ---------- */
+@media (min-width: 768px) {
+  :root { --maxw: 560px; }
+  body { font-size: 16.5px; }
+  .card { padding: var(--s-6) var(--s-5); }
+  .brandbar { padding: var(--s-6) var(--s-5) var(--s-4); }
+  .shell { padding: 0 var(--s-5) var(--s-8); }
+}
+@media (min-width: 1024px) {
+  :root { --maxw: 620px; }
+}

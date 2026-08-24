@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Job Fair 2026 — Form Choices Management</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: 'Inter', Arial, sans-serif; margin: 0; padding: 24px 16px 60px;
+    background: #111111; color: #f0f0f0;
+  }
+  .wrap { max-width: 760px; margin: 0 auto; }
+  h1 { font-size: 20px; letter-spacing: -0.02em; margin: 0 0 4px; }
+  .sub { color: #888888; font-size: 13.5px; margin: 0 0 22px; line-height: 1.5; }
+
+  .card {
+    background: #1a1a1a; border: 1px solid #252525; border-radius: 14px;
+    padding: 18px; margin-bottom: 16px;
+  }
+  .card h2 {
+    font-size: 12px; color: #d4820a; text-transform: uppercase;
+    letter-spacing: 0.08em; font-weight: 600; margin: 0 0 12px;
+  }
+  label.fl {
+    display: block; font-size: 11px; color: #888888; text-transform: uppercase;
+    letter-spacing: 0.06em; margin: 0 0 5px 2px;
+  }
+  input[type="text"], input[type="password"], input[type="number"], select {
+    width: 100%; font-family: inherit; font-size: 15px; padding: 11px 13px;
+    background: #111111; border: 1px solid #333333; border-radius: 10px;
+    color: #f0f0f0; outline: none;
+  }
+  input:focus, select:focus { border-color: #d4820a; }
+  button {
+    font-family: inherit; font-size: 14px; font-weight: 600; color: #ffffff;
+    background: #0b6efd; border: none; border-radius: 9px; padding: 10px 14px;
+    cursor: pointer;
+  }
+  button:hover { filter: brightness(1.1); }
+  button:disabled { opacity: .5; cursor: wait; }
+  button.ghost { background: #222222; color: #aaaaaa; border: 1px solid #333333; }
+  button.warn { background: #7a5000; }
+  button.small { font-size: 12px; padding: 6px 10px; }
+
+  .row { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
+  .row > div { flex: 1; min-width: 140px; }
+
+  #statusMsg {
+    display: none; margin: 0 0 16px; padding: 12px 14px; border-radius: 10px;
+    font-size: 13.5px; line-height: 1.5;
+  }
+  #statusMsg.ok { display: block; background: #16211a; border: 1px solid #2ea44f; color: #9fdcb0; }
+  #statusMsg.err { display: block; background: #2a1215; border: 1px solid #c0392b; color: #ff9f9f; }
+  #statusMsg.info { display: block; background: #101c2c; border: 1px solid #1c3a5e; color: #a8c4e0; }
+
+  .fieldTabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; }
+  .fieldTab {
+    font-size: 12.5px; padding: 8px 12px; border-radius: 8px; cursor: pointer;
+    background: #222222; color: #cccccc; border: 1px solid #333333;
+  }
+  .fieldTab.active { background: #d4820a; color: #111111; border-color: #d4820a; font-weight: 600; }
+  .fieldMeta { font-size: 12px; color: #777777; margin: 10px 2px 0; line-height: 1.5; }
+  .badge {
+    display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: .05em;
+    text-transform: uppercase; border-radius: 5px; padding: 2px 6px; margin-left: 6px;
+  }
+  .badge.locked { background: #3a1a1a; color: #e07b7b; border: 1px solid #7a3030; }
+  .badge.protected { background: #2a2200; color: #e0b457; border: 1px solid #8a6d1a; }
+
+  table.choices { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  table.choices th {
+    text-align: left; font-size: 10.5px; text-transform: uppercase; letter-spacing: .06em;
+    color: #666666; padding: 6px 6px; border-bottom: 1px solid #252525;
+  }
+  table.choices td { padding: 9px 6px; border-bottom: 1px solid #202020; vertical-align: middle; }
+  tr.inactive td { opacity: .45; }
+  .valMono { font-family: monospace; font-size: 12px; color: #999999; word-break: break-all; }
+  .actions { white-space: nowrap; }
+  .actions button { margin-right: 4px; }
+
+  .addGrid { display: grid; grid-template-columns: 2fr 2fr 90px auto auto; gap: 8px; align-items: end; }
+  @media (max-width: 620px) { .addGrid { grid-template-columns: 1fr 1fr; } }
+
+  .hintText { font-size: 12px; color: #777777; line-height: 1.55; margin-top: 10px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Form Choices Management</h1>
+  <p class="sub">Manage the selectable options used by the applicant registration form. Questions, field types and business logic are fixed — only choices are configurable. Changes apply to <b>future registrations only</b>; historical records are never modified.</p>
+
+  <div id="statusMsg" role="status" aria-live="polite"></div>
+
+  <!-- Auth gate -->
+  <div class="card" id="authCard">
+    <h2>Administrator Access</h2>
+    <div class="row">
+      <div style="flex:3">
+        <label class="fl" for="adminKey">Admin key</label>
+        <input type="password" id="adminKey" autocomplete="off" placeholder="Provided by the system administrator">
+      </div>
+      <div style="flex:0"><button id="unlockBtn" onclick="unlock()">Unlock</button></div>
+    </div>
+    <p class="hintText">The key is validated server-side on every change, kept in this browser tab only (never stored in page source), and sent exclusively via POST request bodies.</p>
+  </div>
+
+  <!-- Manager -->
+  <div id="managerApp" style="display:none">
+    <div class="card">
+      <h2>Registration Field</h2>
+      <div class="fieldTabs" id="fieldTabs"></div>
+      <p class="fieldMeta" id="fieldMeta"></p>
+    </div>
+
+    <div class="card">
+      <h2>Choices</h2>
+      <table class="choices" id="choicesTable">
+        <thead><tr><th>Order</th><th>Display label</th><th>Value</th><th>Status</th><th class="actions">Actions</th></tr></thead>
+        <tbody id="choicesBody"></tbody>
+      </table>
+    </div>
+
+    <div class="card" id="addCard">
+      <h2>Add Choice</h2>
+      <div class="addGrid">
+        <div><label class="fl" for="newLabel">Display label *</label><input type="text" id="newLabel" maxlength="120"></div>
+        <div><label class="fl" for="newValue">Choice value (defaults to label)</label><input type="text" id="newValue" maxlength="120"></div>
+        <div><label class="fl" for="newSort">Sort order</label><input type="number" id="newSort" placeholder="auto"></div>
+        <div><button onclick="addChoice()">Add Choice</button></div>
+        <div><label class="fl">&nbsp;</label><label style="font-size:12.5px;color:#aaa"><input type="checkbox" id="newActive" checked> Active</label></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="../api.js"></script>
+<script>
+(function () {
+  var state = { unlocked: false, data: null, currentField: null };
+
+  var $ = function (id) { return document.getElementById(id); };
+  function esc(s) {
+    var d = document.createElement('div');
+    d.textContent = s == null ? '' : String(s);
+    return d.innerHTML;
+  }
+  function setStatus(kind, msg) {
+    var el = $('statusMsg');
+    el.className = kind === '' ? '' : kind;
+    el.textContent = msg;
+    el.style.display = msg ? 'block' : 'none';
+  }
+  function getKey() { return sessionStorage.getItem('fc_admin_key') || ''; }
+  function setKey(k) { sessionStorage.setItem('fc_admin_key', k); }
+
+  /* ── Auth ── */
+  window.unlock = function () {
+    var k = $('adminKey').value.trim();
+    if (!k) { setStatus('err', 'Enter the administrator key.'); return; }
+    setKey(k);
+    $('unlockBtn').disabled = true;
+    REGISTRATION_API.adminFormChoice('list_form_choice', {}, k)
+      .then(function (out) { proceed(out); })
+      .catch(function (err) {
+        $('unlockBtn').disabled = false;
+        if (/not provisioned/i.test(err.message)) {
+          setStatus('err', err.message + ' The owner must run generateFormChoicesAdminKey() once from the Apps Script editor.');
+        } else {
+          setStatus('err', err.message);
+        }
+      });
+  };
+  function proceed(listing) {
+    state.unlocked = true;
+    state.data = listing;
+    state.currentField = Object.keys(listing.fields)[0] || null;
+    $('adminKey').value = '';
+    document.querySelector('#authCard').style.display = 'none';
+    $('managerApp').style.display = 'block';
+    renderFieldTabs();
+    renderField();
+    setStatus('', '');
+  }
+
+  /* ── Data ── */
+  function loadData() {
+    setStatus('info', 'Loading configuration…');
+    REGISTRATION_API.adminFormChoice('list_form_choice', {}, getKey())
+      .then(function (listing) {
+        state.data = listing;
+        if (!state.data.fields[state.currentField]) {
+          state.currentField = Object.keys(state.data.fields)[0] || null;
+        }
+        renderFieldTabs();
+        renderField();
+        setStatus('', '');
+      })
+      .catch(function (err) {
+        setStatus('err', err.message);
+        if (/unauthorized|locked/i.test(err.message)) {
+          state.unlocked = false;
+          document.querySelector('#authCard').style.display = 'block';
+          $('managerApp').style.display = 'none';
+        }
+      });
+  }
+
+  function renderFieldTabs() {
+    var tabs = $('fieldTabs');
+    tabs.innerHTML = '';
+    Object.keys(state.data.fields).forEach(function (key) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'fieldTab' + (key === state.currentField ? ' active' : '');
+      b.textContent = state.data.fields[key].label.replace(/:$/, '').replace(/\?$/, '');
+      b.onclick = function () { state.currentField = key; renderFieldTabs(); renderField(); };
+      tabs.appendChild(b);
+    });
+  }
+
+  function renderField() {
+    var meta = state.data.fields[state.currentField];
+    var rows = managementRows(state.currentField);
+
+    $('fieldMeta').innerHTML =
+      esc(meta.label) +
+      (meta.locked ? '<span class="badge locked">Locked · application logic</span>' : '') +
+      (meta.protectedValues && meta.protectedValues.length ? '<span class="badge protected">Protected values: ' + esc(meta.protectedValues.join(', ')) + '</span>' : '');
+
+    var body = $('choicesBody');
+    body.innerHTML = '';
+    var rows = managementRows(state.currentField);
+
+    rows.forEach(function (row, i) {
+      var tr = document.createElement('tr');
+      if (!row.active) tr.className = 'inactive';
+      var prot = (meta.protectedValues || []).indexOf(row.value) !== -1;
+
+      var td1 = document.createElement('td'); td1.textContent = (i + 1);
+      var td2 = document.createElement('td');
+      td2.innerHTML = '<b>' + esc(row.label) + '</b>' + (prot ? '<span class="badge protected">Protected</span>' : '');
+      var td3 = document.createElement('td'); td3.innerHTML = '<span class="valMono">' + esc(row.value) + '</span>';
+      var td4 = document.createElement('td'); td4.textContent = row.active ? 'Active' : 'Inactive';
+      var td5 = document.createElement('td'); td5.className = 'actions';
+
+      if (!meta.locked) {
+        td5.appendChild(btn('Edit', 'ghost small', function () { editChoice(row); }));
+        if (!(prot && row.active)) {
+          td5.appendChild(btn(row.active ? 'Deactivate' : 'Activate', row.active ? 'warn small' : 'small', function () { toggleChoice(row); }));
+        }
+        td5.appendChild(btn('↑', 'ghost small', function () { move(row, 'up'); }));
+        td5.appendChild(btn('↓', 'ghost small', function () { move(row, 'down'); }));
+      } else {
+        var note = document.createElement('span');
+        note.style.cssText = 'font-size:11px;color:#666';
+        note.textContent = 'view only';
+        td5.appendChild(note);
+      }
+
+      tr.appendChild(td1); tr.appendChild(td2); tr.appendChild(td3); tr.appendChild(td4); tr.appendChild(td5);
+      body.appendChild(tr);
+    });
+
+    if (!rows.length) {
+      var tr = document.createElement('tr');
+      var td = document.createElement('td');
+      td.colSpan = 5; td.style.cssText = 'color:#666;padding:16px;text-align:center';
+      td.textContent = 'No choices configured.';
+      tr.appendChild(td); body.appendChild(tr);
+    }
+
+    $('addCard').style.display = meta.locked ? 'none' : 'block';
+  }
+
+  function btn(text, cls, onclick) {
+    var b = document.createElement('button');
+    b.type = 'button'; b.textContent = text; b.className = cls;
+    b.onclick = function () { onclick(); };
+    return b;
+  }
+
+  // Management view: ALL rows for the field, from the authenticated listing.
+  function managementRows(fieldKey) {
+    return ((state.data.allChoices || {})[fieldKey] || []).slice();
+  }
+
+  /* ── Operations ── */
+  function run(op, payload, doneMsg) {
+    REGISTRATION_API.adminFormChoice(op, payload, getKey())
+      .then(function (out) { setStatus('ok', out.message || doneMsg || 'Done.'); loadData(); })
+      .catch(function (err) { setStatus('err', err.message); });
+  }
+
+  window.addChoice = function () {
+    var label = $('newLabel').value.trim();
+    if (!label) { setStatus('err', 'Display label is required.'); return; }
+    run('add_form_choice', {
+      fieldKey: state.currentField,
+      displayLabel: label,
+      choiceValue: $('newValue').value.trim(),
+      sortOrder: $('newSort').value,
+      active: $('newActive').checked
+    }, 'Choice added.');
+    $('newLabel').value = ''; $('newValue').value = ''; $('newSort').value = '';
+    $('newActive').checked = true;
+  };
+
+  function editChoice(row) {
+    var label = prompt('Display label:', row.label);
+    if (label === null) return;
+    label = label.trim();
+    if (!label) { setStatus('err', 'Display label is required.'); return; }
+    var value = prompt('Choice value (must stay unique for this field):\n\nChanging the VALUE of an existing choice does NOT update past submissions.', row.value);
+    if (value === null) return;
+    value = value.trim();
+    var sortRaw = prompt('Sort order (number):', String(row.sort));
+    if (sortRaw === null) return;
+    var payload = {
+      choiceId: row.id,
+      displayLabel: label,
+      choiceValue: value,
+      sortOrder: sortRaw,
+      active: row.active,
+      confirmValueChange: value !== row.value
+    };
+    run('update_form_choice', payload, 'Choice updated.');
+  }
+
+  function toggleChoice(row) {
+    run('toggle_form_choice', { choiceId: row.id }, 'Saved.');
+  }
+
+  function move(row, direction) {
+    run('reorder_form_choice', { choiceId: row.id, direction: direction }, 'Moved.');
+  }
+})();
+</script>
+</body>
+</html>
