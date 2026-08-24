@@ -204,11 +204,12 @@ window.REGISTRATION_API = (function () {
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify(body)
     }).then(function (res) {
-      return res.json().catch(function () { throw new Error('Unexpected server response.'); });
-    }).then(function (out) {
-      if (!res.ok) throw new Error(out && out.message ? out.message : 'Request failed.');
-      if (out.status === 'error') throw new Error(out.message || 'Request failed.');
-      return out;
+      return res.json().catch(function () { throw new Error('Unexpected server response.'); })
+        .then(function (out) {
+          if (!res.ok) throw new Error(out && out.message ? out.message : 'Request failed.');
+          if (out.status === 'error') throw new Error(out.message || 'Request failed.');
+          return out;
+        });
     });
   }
 
