@@ -505,7 +505,7 @@ function getVacancyList() {
 /**
  * ====================================================================
  * APPLICANT REGISTRATION FORM BACKEND (doPost)
- * Receives submissions from registration.html / api.js
+ * Receives submissions from index.html / api.js
  *
  * Frontend → POST JSON { action:'register', fields:{...}, files:{...} }
  * Files are data URLs (base64) and are stored in Google Drive; the
@@ -559,7 +559,7 @@ const REFERENCE_NUMBER_PREFIX = 'JF26-';
 
 /* --------------------------------------------------------------------
  * REMEDIATION CONSTANTS (audit D-1/D-2/D-3/E-1/E-2/E-3)
- * Allowed values mirror registration.html / api.js exactly.
+ * Allowed values mirror index.html / api.js exactly.
  * KEEP IN SYNC: any option list change must be applied to BOTH sides.
  * -------------------------------------------------------------------- */
 const MAX_PAYLOAD_CHARS = 15000000;          // ~15 MB request body cap (legit max ≈ 13.4 MB base64)
@@ -583,7 +583,7 @@ const TEXT_FORMAT_EXEMPT_HEADERS = { 'Timestamp': true, 'Birthdate:': true };
  * application; administrators manage only choices (via the "Form Choices"
  * sheet). These defaults are also the initial seed and the fail-open
  * fallback if the configuration sheet cannot be read.
- * KEEP IN SYNC with registration.html static fallback options.
+ * KEEP IN SYNC with index.html static fallback options.
  * -------------------------------------------------------------------- */
 const FORM_CHOICES_SHEET_NAME = 'Form Choices';
 const FORM_CHOICES_HEADERS = ['Choice ID', 'Field Key', 'Choice Value', 'Display Label', 'Active', 'Sort Order', 'Created At', 'Updated At'];

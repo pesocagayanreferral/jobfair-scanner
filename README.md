@@ -17,7 +17,7 @@ Google Apps Script (Code.gs)
   • Manages check-in, interview logging, stats, search
         │
         ▼
-Scanner Web App (index.html, hosted free on GitHub Pages)
+Scanner Web App (scanner.html, hosted free on GitHub Pages)
   • Camera-based QR scanning (check-in + interview recording)
   • Manual search/check-in fallback
   • Live dashboard counters
@@ -41,8 +41,8 @@ Two extra sheets in the same workbook:
 | File | Purpose |
 |---|---|
 | `Code.gs` | Apps Script backend — bound to the Form Responses sheet |
-| `index.html` | Scanner front end — deployed on GitHub Pages |
-| `registration.html` | Applicant registration form (multi-step, mobile-friendly) |
+| `index.html` | Applicant registration form (multi-step, mobile-friendly) — GitHub Pages default entry point |
+| `scanner.html` | Scanner front end — deployed on GitHub Pages |
 | `api.js` | API abstraction for the registration form — holds the Apps Script endpoint |
 
 ## Applicant Registration Form
@@ -50,7 +50,7 @@ Two extra sheets in the same workbook:
 Replaces the Google Form pipeline with a self-hosted form. Submissions go straight into the **first sheet of the same workbook**, so every registrant is immediately visible to the existing scanner/check-in system.
 
 ```
-Applicant Browser → registration.html → api.js (submitApplicant)
+Applicant Browser → index.html → api.js (submitApplicant)
                   → Apps Script doPost (Code.gs)
                   → Google Sheet + Google Drive (uploads) + Gmail ticket
 ```
@@ -59,9 +59,9 @@ Applicant Browser → registration.html → api.js (submitApplicant)
 
 1. Update `Code.gs` in your Apps Script project, then redeploy the web app:
    **Deploy → Manage deployments → Edit (pencil) → Version: New version → Deploy**.
-   Reusing the same deployment keeps the existing `/exec` URL, so `index.html` and `ticket.html` keep working unchanged.
+   Reusing the same deployment keeps the existing `/exec` URL, so `index.html`, `scanner.html`, and `ticket.html` keep working unchanged.
 2. In `api.js`, set `APPS_SCRIPT_URL` to that web app `/exec` URL (it plays the role of an environment variable; GitHub Pages has none). No secrets go in this file.
-3. Host `registration.html` + `api.js` alongside `index.html` on GitHub Pages and share the page link with applicants.
+3. Host `index.html` (registration) + `api.js` alongside `scanner.html` on GitHub Pages and share the page link with applicants.
 
 ### Behavior
 
@@ -93,7 +93,7 @@ Selectable options in the registration form are configuration-driven via a **"Fo
 
 - **Managed fields**: Interview Location, Gender, Civil Status, Education Attainment, Employment Preference, PESO Assistance Programs. Yes/No questions (First-time Jobseeker, Returning OFW?, Returning Worker, Skills Training, Disability) are **locked** — their values drive conditional logic. PESO "**None**" is a protected value (cannot be deactivated/renamed; exclusivity logic is value-based).
 - **Deactivation over deletion**: inactive choices disappear from new forms; historical submissions keep their stored values untouched.
-- **Public read**: `GET action=form_choices` returns active choices only (cached 5 min, invalidated on every mutation). `registration.html` falls back to its built-in defaults if the endpoint fails — the form never becomes unusable.
+- **Public read**: `GET action=form_choices` returns active choices only (cached 5 min, invalidated on every mutation). `index.html` falls back to its built-in defaults if the endpoint fails — the form never becomes unusable.
 - **Server-side authority**: registration validation checks submitted values against ACTIVE configured choices; fabricated/inactive values are rejected regardless of what the browser shows.
 
 ### Admin access provisioning
@@ -114,7 +114,7 @@ Selectable options in the registration form are configuration-driven via a **"Fo
    - Optional: a time-driven trigger for `retryPendingEmails` (daily) as a safety net for any emails that hit Gmail's sending quota.
    - `Deploy → New deployment → Web app` — **Execute as: Me**, **Who has access: Anyone** (required for the scanner page to reach it without a login wall).
 3. **GitHub Pages**:
-   - Create a public repo, upload `index.html`.
+   - Create a public repo, upload the site files (`index.html` is the public landing page; the scanner lives at `scanner.html`).
    - Paste your Apps Script Web App `/exec` URL into the `APPS_SCRIPT_URL` constant near the top of the `<script>` block.
    - Enable Pages under repo Settings → Pages → Deploy from branch → `main` / root.
    - Bookmark the resulting URL on staff phones.
