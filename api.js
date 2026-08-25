@@ -44,7 +44,6 @@ window.REGISTRATION_API = (function () {
     return e;
   }
 
-  var MSG_NETWORK = 'We could not submit your registration. Please check your internet connection and try again.';
   var MSG_BACKEND = 'We could not submit your registration. Please try again in a few minutes.';
   var MSG_TIMEOUT = 'The submission took too long and may not have gone through. Please check your connection and try again.';
 
@@ -64,6 +63,21 @@ window.REGISTRATION_API = (function () {
   }
 
   // text/plain body = CORS-simple request, no preflight; Apps Script handles it via doPost
+  //
+  // TRANSPORT RETRY POLICY (bounded): only a failed fetch/abort — i.e. NO
+  // usable server response — is retried: 3 attempts total, ~500 ms then
+  // ~1000 ms apart. Any parseable server response (success, duplicate,
+  // rate_limited, validation, ...) settles the attempt IMMEDIATELY and is
+  // never retried. Retrying after an ambiguous transport failure is safe
+  // here because the backend's duplicate protection returns the SAME
+  // reference number if the first attempt secretly succeeded.
+  var RETRY_DELAYS_MS = [500, 1000];
+  var MSG_TRANSPORT = 'Unable to reach the registration server after several attempts. Please check your network connection and try again.';
+
+  function delay(ms) {
+    return new Promise(function (resolve) { setTimeout(resolve, ms); });
+  }
+
   function submitApplicant(fields, files, extras) {
     files = files || {};
     extras = extras || {};
@@ -93,34 +107,66 @@ window.REGISTRATION_API = (function () {
           }
         };
 
-        var controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
-        var timer = controller
-          ? setTimeout(function () { controller.abort(); }, CONFIG.REQUEST_TIMEOUT_MS)
-          : null;
+        // One POST attempt. Resolves { res, data } for ANY server response;
+        // rejects { transport:true, aborted } only when no response arrives.
+        function postOnce() {
+          return new Promise(function (resolve, reject) {
+            var controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+            var timer = controller
+              ? setTimeout(function () { controller.abort(); }, CONFIG.REQUEST_TIMEOUT_MS)
+              : null;
 
-        return fetch(CONFIG.APPS_SCRIPT_URL, {
-          method: 'POST',
-          redirect: 'follow',
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify(payload),
-          signal: controller ? controller.signal : undefined
-        }).then(function (res) {
-          if (timer) clearTimeout(timer);
-          // A readable JSON body means the backend processed the request:
-          // classify from the payload, never as a network failure.
-          return res.json().catch(function () {
-            // Unparseable body — cannot trust any verdict; generic backend message.
+            fetch(CONFIG.APPS_SCRIPT_URL, {
+              method: 'POST',
+              redirect: 'follow',
+              headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+              body: JSON.stringify(payload),
+              signal: controller ? controller.signal : undefined
+            }).then(function (res) {
+              if (timer) clearTimeout(timer);
+              res.json().then(function (data) {
+                resolve({ res: res, data: data });
+              }, function () {
+                resolve({ res: res, data: null }); // unparseable body still counts as "server answered"
+              });
+            }, function (err) {
+              if (timer) clearTimeout(timer);
+              reject({
+                transport: true,
+                aborted: !!(err && err.name === 'AbortError'),
+                cause: err
+              });
+            });
+          });
+        }
+
+        function run(attempt) {
+          return postOnce().catch(function (err) {
+            if (err.transport && attempt <= RETRY_DELAYS_MS.length) {
+              console.warn('Registration attempt ' + attempt + ' failed at transport level — retrying.');
+              return delay(RETRY_DELAYS_MS[attempt - 1]).then(function () { return run(attempt + 1); });
+            }
+            throw err;
+          });
+        }
+
+        return run(1).then(function (outcome) {
+          var res = outcome.res, data = outcome.data;
+          if (data == null) {
             console.error('Registration backend returned an unreadable body (HTTP ' + res.status + ')');
             throw ApiError(MSG_BACKEND);
-          }).then(function (data) {
-            if (!res.ok) { console.error('Registration backend error', data); throw ApiError(data && (data.message || messageForCode(data.code))); }
-            return normalizeResponse(data);
-          });
+          }
+          if (!res.ok) {
+            console.error('Registration backend error', data);
+            throw ApiError(data && (data.message || messageForCode(data.code)));
+          }
+          return normalizeResponse(data);
         }, function (err) {
-          if (timer) clearTimeout(timer);
-          console.error(err);
-          // No valid backend response was received — genuine transport issue.
-          throw ApiError(err && err.name === 'AbortError' ? MSG_TIMEOUT : MSG_NETWORK);
+          if (err && err.transport) {
+            console.error(err.cause);
+            throw ApiError(err.aborted ? MSG_TIMEOUT : MSG_TRANSPORT);
+          }
+          throw err;
         });
       });
   }

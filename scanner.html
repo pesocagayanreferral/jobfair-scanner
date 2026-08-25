@@ -263,8 +263,10 @@
   </div>
 
   <script src="https://unpkg.com/html5-qrcode"></script>
+  <script src="api.js"></script>
   <script>
-    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwgB4E6gqU5aVlaa-dNbsC6UotAIRXnwiMeWGDnaGH8Et4seXELY7lQdx0gb40JJwJMOA/exec';
+    // Single source of truth for the endpoint: api.js (REGISTRATION_API.CONFIG).
+    const APPS_SCRIPT_URL = window.REGISTRATION_API.CONFIG.APPS_SCRIPT_URL;
 
     let isProcessing = false;
     let html5QrCode;
